@@ -11,9 +11,10 @@ import {
     BurnMachineSchema,
     buildBurnContextWithMap,
 } from "../src";
+// @ts-ignore
 import { buildMockLockChain, buildMockMintChain } from "./testutils/mock";
 import { SECONDS } from "@renproject/utils";
-import { BurnSession } from "../src/types/burn";
+import { BurnSession } from '../src';
 import BigNumber from "bignumber.js";
 
 loadDotEnv();

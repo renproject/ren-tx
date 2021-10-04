@@ -4,7 +4,7 @@
     "description": "XState Statemachines for tracking RenVM transactions reactively",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/renproject/ren-js.git"
+        "url": "git+https://github.com/renproject/ren-tx.git"
     },
     "publishConfig": {
         "access": "public"
@@ -23,7 +23,7 @@
     "author": "Ren",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/renproject/ren-js/issues"
+        "url": "https://github.com/renproject/ren-tx/issues"
     },
     "main": "build/main/index.js",
     "module": "build/module/index.js",
@@ -35,21 +35,25 @@
         "build:main": "tsc -p tsconfig.json",
         "build:module": "tsc -p tsconfig.module.json",
         "clean": "yarn rimraf ./build ./node_modules",
-        "test": "yarn tsdx test",
+        "test": "tsdx test",
         "prepare": "yarn build",
         "npmignore": "npmignore -g ../../../.gitignore",
         "prepare-release": "run-s npmignore build",
-        "test:unit": "nyc ../../../node_modules/ts-mocha/bin/ts-mocha --sort --exit --paths -p ./tsconfig.json ./test/*.spec.ts ./test/**/*.spec.ts --ignore ./test/testutils/chai.d.ts"
+        "test:unit": "nyc node_modules/ts-mocha/bin/ts-mocha --sort --exit --paths -p ./tsconfig.json ./test/*.spec.ts ./test/**/*.spec.ts --ignore ./test/testutils/chai.d.ts"
     },
     "dependencies": {
+        "@renproject/chains-bitcoin": "^2.5.9",
         "bignumber.js": "^9.0.1"
     },
     "devDependencies": {
         "@renproject/interfaces": "^2.5.2",
         "@renproject/ren": "^2.5.7",
         "@renproject/rpc": "^2.5.6",
+        "@xstate/test": "^0.4.2",
+        "bs58": "^4.0.1",
         "dotenv": "^8.2.0",
         "ethers": "^5.4.3",
+        "tsdx": "^0.14.1",
         "xstate": "^4.17.0"
     },
     "peerDependencies": {
