@@ -1,6 +1,6 @@
 {
     "name": "@renproject/ren-tx",
-    "version": "2.5.7",
+    "version": "2.5.10-alpha.0",
     "description": "XState Statemachines for tracking RenVM transactions reactively",
     "repository": {
         "type": "git",
@@ -46,9 +46,11 @@
         "bignumber.js": "^9.0.1"
     },
     "devDependencies": {
+        "@renproject/chains-ethereum": "^2.5.9",
         "@renproject/interfaces": "^2.5.2",
         "@renproject/ren": "^2.5.7",
         "@renproject/rpc": "^2.5.6",
+        "@truffle/hdwallet-provider": "^1.5.0",
         "@xstate/test": "^0.4.2",
         "bs58": "^4.0.1",
         "dotenv": "^8.2.0",
