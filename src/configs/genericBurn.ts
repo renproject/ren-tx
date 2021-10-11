@@ -34,15 +34,15 @@ const spawnBurnTransaction = assign<
     BurnMachineContext<any, any>,
     BurnMachineEvent<any, any>
 >({
-    burnListenerRef: <X, Y>(c: BurnMachineContext<X, Y>, _e: any) => {
-        const actorName = `${c.tx.id}BurnListener`;
-        if (c.burnListenerRef) {
+    burnListenerRef: <X, Y>(context: BurnMachineContext<X, Y>, event: any) => {
+        const actorName = `${context.tx.id}BurnListener`;
+        if (context.burnListenerRef) {
             console.warn("listener already exists");
-            return c.burnListenerRef;
+            return context.burnListenerRef;
         }
-        const cb = burnTransactionListener(c);
+        const transactionListener = burnTransactionListener(context);
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        return spawn(cb, actorName) as Actor<any>;
+        return spawn(transactionListener, actorName) as Actor<any>;
     },
 });
 
@@ -65,7 +65,7 @@ const extractTx = <X>(
 
 const performBurn = async <X, Y>(
     burn: BurnAndRelease<any, DepositCommon<any>, any, any>,
-    callback: Sender<BurnMachineEvent<X, Y>>,
+    send: Sender<BurnMachineEvent<X, Y>>,
     cleaners: Array<() => void>,
     context: BurnMachineContext<X, Y>,
 ) => {
@@ -88,7 +88,7 @@ const performBurn = async <X, Y>(
                     sourceTxConfs: confs,
                     sourceTxConfTarget: target,
                 };
-                callback({
+                send({
                     type: "CONFIRMATION",
                     data,
                 });
@@ -98,7 +98,7 @@ const performBurn = async <X, Y>(
                         sourceTxConfs: target,
                         sourceTxConfTarget: target,
                     };
-                    callback({
+                    send({
                         type: "CONFIRMED",
                         data,
                     });
@@ -130,7 +130,7 @@ const performBurn = async <X, Y>(
                     sourceTxAmount: context.tx.targetAmount,
                 };
                 tx = data;
-                callback({
+                send({
                     type: "SUBMITTED",
                     data,
                 });
@@ -149,7 +149,7 @@ const performBurn = async <X, Y>(
                 sourceTxConfs: target,
                 sourceTxConfTarget: target,
             };
-            callback({
+            send({
                 type: "CONFIRMED",
                 data,
             });
@@ -166,7 +166,7 @@ const performBurn = async <X, Y>(
 
 const performRelease = async <X, Y>(
     burn: BurnAndRelease<any, DepositCommon<any>, any, any>,
-    callback: Sender<BurnMachineEvent<X, Y>>,
+    send: Sender<BurnMachineEvent<X, Y>>,
     cleaners: Array<() => void>,
     tx: ConfirmedBurnTransaction<X>,
 ) => {
@@ -183,7 +183,7 @@ const performRelease = async <X, Y>(
             ...tx,
             renVMHash,
         };
-        callback({
+        send({
             type: "ACCEPTED",
             data,
         });
@@ -202,7 +202,7 @@ const performRelease = async <X, Y>(
             completedAt: Date.now(),
             destTxAmount: (transaction as unknown as { amount: string }).amount,
         };
-        callback({
+        send({
             type: "COMPLETED",
             data,
         });
@@ -218,7 +218,7 @@ const performRelease = async <X, Y>(
 
     releaseRef.catch((e) => {
         console.error("release error", e);
-        callback({
+        send({
             type: "RELEASE_ERROR",
             data: tx,
             error: e,
@@ -238,12 +238,12 @@ const performRelease = async <X, Y>(
             destTxHash: burn.releaseTransaction,
             renResponse: res,
         };
-        callback({
+        send({
             type: "RELEASED",
             data,
         });
     } catch (e) {
-        callback({
+        send({
             type: "RELEASE_ERROR",
             data: tx,
             error: e,
@@ -253,20 +253,20 @@ const performRelease = async <X, Y>(
 
 const burnTransactionListener =
     <X, Y>(context: BurnMachineContext<X, Y>) =>
-    (callback: Sender<BurnMachineEvent<X, Y>>, receive: Receiver<any>) => {
+    (send: Sender<BurnMachineEvent<X, Y>>, receive: Receiver<any>) => {
         const cleaners: Array<() => void> = [];
         let burning = false;
         let tx: ConfirmedBurnTransaction<X>;
         burnAndRelease(context)
             .then((burn) => {
                 // Ready to recieve SUBMIT
-                callback({ type: "CREATED" });
+                send({ type: "CREATED" });
                 if (
                     context.autoSubmit ||
-                    // Alway "SUBMIT" if we have submitted previously
+                    // Always "SUBMIT" if we have submitted previously
                     context.tx.transaction
                 ) {
-                    setTimeout(() => callback("SUBMIT"), 500);
+                    setTimeout(() => send("SUBMIT"), 500);
                 }
 
                 receive((event) => {
@@ -276,11 +276,11 @@ const burnTransactionListener =
                             return;
                         }
                         burning = true;
-                        performBurn(burn, callback, cleaners, context)
+                        performBurn(burn, send, cleaners, context)
                             .then((r) => (tx = r))
                             .catch((e) => {
                                 console.error(e);
-                                callback({
+                                send({
                                     type: "BURN_ERROR",
                                     data: e.toString(),
                                     error: e,
@@ -294,11 +294,11 @@ const burnTransactionListener =
                                 .transaction as ConfirmedBurnTransaction<X>) ||
                             extractTx(burn);
 
-                        performRelease(burn, callback, cleaners, tx)
+                        performRelease(burn, send, cleaners, tx)
                             .then()
                             .catch((e) => {
                                 console.error(e);
-                                callback({
+                                send({
                                     type: "BURN_ERROR",
                                     data: context.tx,
                                     error: e,
@@ -310,7 +310,7 @@ const burnTransactionListener =
             .catch((e) => {
                 console.error(e);
 
-                callback({ type: "BURN_ERROR", data: {}, error: e });
+                send({ type: "BURN_ERROR", data: {}, error: e });
             });
 
         return () => {

@@ -128,24 +128,40 @@ export interface BurnMachineSchema {
         destInitiated: {};
     };
 }
+export enum BurnEvent {
+    NOOP = "NOOP",
+    RESTORE = "RESTORE",
+    CREATED = "CREATED",
+    RETRY = "RETRY",
+    SUBMIT = "SUBMIT",
+    SUBMITTED = "SUBMITTED",
+    RELEASE = "RELEASE",
+    RELEASE_ERROR = "RELEASE_ERROR",
+    BURN_ERROR = "BURN_ERROR",
+    CONFIRMATION = "CONFIRMATION",
+    CONFIRMED = "CONFIRMED",
+    ACCEPTED = "ACCEPTED",
+    RELEASED = "RELEASED",
+    COMPLETED = "COMPLETED"
+}
 
 export type BurnMachineEvent<X, Y> =
-    | { type: "NOOP" }
-    | { type: "RESTORE" }
-    | { type: "CREATED" }
-    | { type: "RETRY" }
+    | { type: BurnEvent.NOOP }
+    | { type: BurnEvent.RESTORE }
+    | { type: BurnEvent.CREATED }
+    | { type: BurnEvent.RETRY }
     // Submit to renvm
-    | { type: "SUBMIT" }
+    | { type: BurnEvent.SUBMIT }
     // Burn Submitted
-    | { type: "SUBMITTED"; data: BurnTransaction }
-    | { type: "RELEASE" }
-    | { type: "RELEASE_ERROR"; data: Partial<BurnTransaction>; error: Error }
-    | { type: "BURN_ERROR"; data: Partial<BurnSession<X, Y>>; error: Error }
-    | { type: "CONFIRMATION"; data: BurnTransaction }
-    | { type: "CONFIRMED"; data: BurnTransaction }
-    | { type: "ACCEPTED"; data: ConfirmedBurnTransaction<X> }
-    | { type: "RELEASED"; data: ReleasedBurnTransaction<X> }
-    | { type: "COMPLETED"; data: CompletedBurnTransaction<X, Y> };
+    | { type: BurnEvent.SUBMITTED; data: BurnTransaction }
+    | { type: BurnEvent.RELEASE }
+    | { type: BurnEvent.RELEASE_ERROR; data: Partial<BurnTransaction>; error: Error }
+    | { type: BurnEvent.BURN_ERROR; data: Partial<BurnSession<X, Y>>; error: Error }
+    | { type: BurnEvent.CONFIRMATION; data: BurnTransaction }
+    | { type: BurnEvent.CONFIRMED; data: BurnTransaction }
+    | { type: BurnEvent.ACCEPTED; data: ConfirmedBurnTransaction<X> }
+    | { type: BurnEvent.RELEASED; data: ReleasedBurnTransaction<X> }
+    | { type: BurnEvent.COMPLETED; data: CompletedBurnTransaction<X, Y> };
 
 type extractBurnTx<Type> = Type extends MintChain<infer X> ? X : never;
 type extractReleaseTx<Type> = Type extends LockChain<infer X> ? X : never;
@@ -233,9 +249,9 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
             initial: "restoring",
             states: {
                 restoring: {
-                    entry: send("RESTORE"),
+                    entry: send(BurnEvent.RESTORE),
                     on: {
-                        RESTORE: [
+                        [BurnEvent.RESTORE]: [
                             {
                                 target: "destInitiated",
                                 cond: "isDestInitiated",
@@ -253,7 +269,7 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                 creating: {
                     entry: "burnSpawner",
                     on: {
-                        CREATED: "created",
+                        [BurnEvent.CREATED]: "created",
                     },
 
                     meta: {
