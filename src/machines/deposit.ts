@@ -51,84 +51,84 @@ const largest = (x?: number, y?: number): number => {
 };
 
 export enum DepositStates {
-    CHECKING_COMPLETION = "checkingCompletion",
+    CheckingCompletion = "checkingCompletion",
     /** We are waiting for ren-js to find the deposit */
-    RESTORING_DEPOSIT = "restoringDeposit",
+    RestoringDeposit = "restoringDeposit",
     /** We couldn't restore this deposit */
-    ERROR_RESTORING = "errorRestoring",
+    ErrorRestoring = "errorRestoring",
     /** renjs has found the deposit for the transaction */
-    RESTORED_DEPOSIT = "restoredDeposit",
+    RestoredDeposit = "restoredDeposit",
     /** we are waiting for the source chain to confirm the transaction */
-    CONFIRMING_DEPOSIT = "srcSettling",
+    ConfirmingDeposit = "srcSettling",
     /** source chain has confirmed the transaction, submitting to renvm for signature */
-    RENVM_SIGNING = "srcConfirmed",
+    RenVmSigning = "srcConfirmed",
     /** renvm has accepted and signed the transaction */
-    RENVM_ACCEPTED = "accepted",
+    RenVmAccepted = "accepted",
     /** renvm did not accept the tx */
-    ERROR_SIGNING = "errorAccepting",
+    ErrorSigning = "errorAccepting",
     /** the user is submitting the transaction to mint on the destination chain */
-    SUBMITTING_MINT = "claiming",
+    SubmittingMint = "claiming",
     /** there was an error submitting the tx to the destination chain */
-    ERROR_MINTING = "errorSubmitting",
+    ErrorMinting = "errorSubmitting",
     /** We have recieved a txHash for the destination chain */
-    MINTING = "destInitiated",
+    Minting = "destInitiated",
     /** user has acknowledged that the transaction is completed, so we can stop listening for further deposits */
-    COMPLETED = "completed",
+    Completed = "completed",
     /** user does not want to mint this deposit or the transaction reverted */
-    REJECTED = "rejected",
+    Rejected = "rejected",
 }
 
 export type DepositMachineTypestate<X> =
     | {
-          value: DepositStates.CHECKING_COMPLETION;
+          value: DepositStates.CheckingCompletion;
           context: DepositMachineContext<AllGatewayTransactions<X>>;
       }
     | {
-          value: DepositStates.RESTORING_DEPOSIT;
+          value: DepositStates.RestoringDeposit;
           context: DepositMachineContext<AllGatewayTransactions<X>>;
       }
     | {
-          value: DepositStates.ERROR_RESTORING;
+          value: DepositStates.ErrorRestoring;
           context: DepositMachineContext<GatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.RESTORED_DEPOSIT;
+          value: DepositStates.RestoredDeposit;
           context: DepositMachineContext<GatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.CONFIRMING_DEPOSIT;
+          value: DepositStates.ConfirmingDeposit;
           context: DepositMachineContext<ConfirmingGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.RENVM_SIGNING;
+          value: DepositStates.RenVmSigning;
           context: DepositMachineContext<AcceptedGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.RENVM_ACCEPTED;
+          value: DepositStates.RenVmAccepted;
           context: DepositMachineContext<AcceptedGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.ERROR_SIGNING;
+          value: DepositStates.ErrorSigning;
           context: DepositMachineContext<ConfirmingGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.SUBMITTING_MINT;
+          value: DepositStates.SubmittingMint;
           context: DepositMachineContext<SubmittingGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.ERROR_MINTING;
+          value: DepositStates.ErrorMinting;
           context: DepositMachineContext<SubmittingGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.MINTING;
+          value: DepositStates.Minting;
           context: DepositMachineContext<MintedGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.COMPLETED;
+          value: DepositStates.Completed;
           context: DepositMachineContext<MintedGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.REJECTED;
+          value: DepositStates.Rejected;
           context: DepositMachineContext<GatewayTransaction<X>>;
       };
 
@@ -206,7 +206,7 @@ export const buildDepositMachine = <X>() =>
     >(
         {
             id: "RenVMDepositTransaction",
-            initial: DepositStates.CHECKING_COMPLETION,
+            initial: DepositStates.CheckingCompletion,
             schema: {
                 events: createSchema<DepositMachineEvent<X>>(),
                 context:

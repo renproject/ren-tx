@@ -50,7 +50,7 @@ export interface BurnMachineContext<BurnType, ReleaseType> {
     burnListenerRef?: Actor<any>;
 }
 
-export enum BurnStates {
+export enum BurnState {
     /** Tx is resolving which state it should be in based on feedback from renjs */
     RESTORE = "restoring",
 
@@ -286,7 +286,7 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                     on: {
                         // When we fail to submit to the host chain, we don't enter the
                         // settling state, so handle the error here
-                        BURN_ERROR: {
+                        [BurnEvent.BURN_ERROR]: {
                             target: "errorBurning",
                             actions: assign({
                                 tx: (ctx, evt) =>
@@ -303,9 +303,8 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                                         : ctx.tx,
                             }),
                         },
-
-                        SUBMIT: {
-                            target: BurnStates.SUBMITTING_BURN,
+                        [BurnEvent.SUBMIT]: {
+                            target: BurnState.SUBMITTING_BURN,
                             actions: send("SUBMIT", {
                                 to: (ctx) => {
                                     return ctx.burnListenerRef?.id || "";
