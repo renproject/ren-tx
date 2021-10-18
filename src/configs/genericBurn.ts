@@ -12,7 +12,7 @@ import {
 } from "@renproject/ren/build/main/burnAndRelease";
 import { Actor, assign, MachineOptions, Receiver, Sender, spawn } from "xstate";
 
-import { BurnMachineContext, BurnMachineEvent } from "../machines/burn";
+import { BurnEvent, BurnMachineContext, BurnMachineEvent } from '../machines/burn'
 import {
     BurnTransaction,
     CompletedBurnTransaction,
@@ -89,7 +89,7 @@ const performBurn = async <X, Y>(
                     sourceTxConfTarget: target,
                 };
                 send({
-                    type: "CONFIRMATION",
+                    type: BurnEvent.CONFIRMATION,
                     data,
                 });
                 if (target <= confs) {
@@ -99,7 +99,7 @@ const performBurn = async <X, Y>(
                         sourceTxConfTarget: target,
                     };
                     send({
-                        type: "CONFIRMED",
+                        type: BurnEvent.CONFIRMED,
                         data,
                     });
                 }
@@ -131,7 +131,7 @@ const performBurn = async <X, Y>(
                 };
                 tx = data;
                 send({
-                    type: "SUBMITTED",
+                    type: BurnEvent.SUBMITTED,
                     data,
                 });
             })
@@ -150,7 +150,7 @@ const performBurn = async <X, Y>(
                 sourceTxConfTarget: target,
             };
             send({
-                type: "CONFIRMED",
+                type: BurnEvent.CONFIRMED,
                 data,
             });
             return data;
@@ -184,7 +184,7 @@ const performRelease = async <X, Y>(
             renVMHash,
         };
         send({
-            type: "ACCEPTED",
+            type: BurnEvent.ACCEPTED,
             data,
         });
     };
@@ -203,7 +203,7 @@ const performRelease = async <X, Y>(
             destTxAmount: (transaction as unknown as { amount: string }).amount,
         };
         send({
-            type: "COMPLETED",
+            type: BurnEvent.COMPLETED,
             data,
         });
     };
@@ -219,7 +219,7 @@ const performRelease = async <X, Y>(
     releaseRef.catch((e) => {
         console.error("release error", e);
         send({
-            type: "RELEASE_ERROR",
+            type: BurnEvent.RELEASE_ERROR,
             data: tx,
             error: e,
         });
@@ -239,12 +239,12 @@ const performRelease = async <X, Y>(
             renResponse: res,
         };
         send({
-            type: "RELEASED",
+            type: BurnEvent.RELEASED,
             data,
         });
     } catch (e) {
         send({
-            type: "RELEASE_ERROR",
+            type: BurnEvent.RELEASE_ERROR,
             data: tx,
             error: e,
         });
@@ -260,17 +260,17 @@ const burnTransactionListener =
         burnAndRelease(context)
             .then((burn) => {
                 // Ready to recieve SUBMIT
-                send({ type: "CREATED" });
+                send({ type: BurnEvent.CREATED });
                 if (
                     context.autoSubmit ||
                     // Always "SUBMIT" if we have submitted previously
                     context.tx.transaction
                 ) {
-                    setTimeout(() => send("SUBMIT"), 500);
+                    setTimeout(() => send(BurnEvent.SUBMIT), 500);
                 }
 
                 receive((event) => {
-                    if (event.type === "SUBMIT") {
+                    if (event.type === BurnEvent.SUBMIT) {
                         // Only burn once
                         if (burning) {
                             return;
@@ -281,14 +281,14 @@ const burnTransactionListener =
                             .catch((e) => {
                                 console.error(e);
                                 send({
-                                    type: "BURN_ERROR",
+                                    type: BurnEvent.BURN_ERROR,
                                     data: e.toString(),
                                     error: e,
                                 });
                             });
                     }
 
-                    if (event.type === "RELEASE") {
+                    if (event.type === BurnEvent.RELEASE) {
                         const tx: ConfirmedBurnTransaction<X> =
                             (context.tx
                                 .transaction as ConfirmedBurnTransaction<X>) ||
@@ -299,7 +299,7 @@ const burnTransactionListener =
                             .catch((e) => {
                                 console.error(e);
                                 send({
-                                    type: "BURN_ERROR",
+                                    type: BurnEvent.BURN_ERROR,
                                     data: context.tx,
                                     error: e,
                                 });
@@ -310,7 +310,7 @@ const burnTransactionListener =
             .catch((e) => {
                 console.error(e);
 
-                send({ type: "BURN_ERROR", data: {}, error: e });
+                send({ type: BurnEvent.BURN_ERROR, data: {}, error: e });
             });
 
         return () => {
