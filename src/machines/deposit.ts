@@ -50,7 +50,7 @@ const largest = (x?: number, y?: number): number => {
     return y;
 };
 
-export enum DepositStates {
+export enum DepositState {
     CheckingCompletion = "checkingCompletion",
     /** We are waiting for ren-js to find the deposit */
     RestoringDeposit = "restoringDeposit",
@@ -59,19 +59,19 @@ export enum DepositStates {
     /** renjs has found the deposit for the transaction */
     RestoredDeposit = "restoredDeposit",
     /** we are waiting for the source chain to confirm the transaction */
-    ConfirmingDeposit = "srcSettling",
+    SrcSettling = "srcSettling",
     /** source chain has confirmed the transaction, submitting to renvm for signature */
-    RenVmSigning = "srcConfirmed",
+    SrcConfirmed = "srcConfirmed",
     /** renvm has accepted and signed the transaction */
-    RenVmAccepted = "accepted",
+    Accepted = "accepted",
     /** renvm did not accept the tx */
-    ErrorSigning = "errorAccepting",
+    ErrorAccepting = "errorAccepting",
     /** the user is submitting the transaction to mint on the destination chain */
-    SubmittingMint = "claiming",
+    Claiming = "claiming",
     /** there was an error submitting the tx to the destination chain */
-    ErrorMinting = "errorSubmitting",
+    ErrorSubmitting = "errorSubmitting",
     /** We have recieved a txHash for the destination chain */
-    Minting = "destInitiated",
+    DestInitiated = "destInitiated",
     /** user has acknowledged that the transaction is completed, so we can stop listening for further deposits */
     Completed = "completed",
     /** user does not want to mint this deposit or the transaction reverted */
@@ -80,55 +80,55 @@ export enum DepositStates {
 
 export type DepositMachineTypestate<X> =
     | {
-          value: DepositStates.CheckingCompletion;
+          value: DepositState.CheckingCompletion;
           context: DepositMachineContext<AllGatewayTransactions<X>>;
       }
     | {
-          value: DepositStates.RestoringDeposit;
+          value: DepositState.RestoringDeposit;
           context: DepositMachineContext<AllGatewayTransactions<X>>;
       }
     | {
-          value: DepositStates.ErrorRestoring;
+          value: DepositState.ErrorRestoring;
           context: DepositMachineContext<GatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.RestoredDeposit;
+          value: DepositState.RestoredDeposit;
           context: DepositMachineContext<GatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.ConfirmingDeposit;
+          value: DepositState.SrcSettling;
           context: DepositMachineContext<ConfirmingGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.RenVmSigning;
+          value: DepositState.SrcConfirmed;
           context: DepositMachineContext<AcceptedGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.RenVmAccepted;
+          value: DepositState.Accepted;
           context: DepositMachineContext<AcceptedGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.ErrorSigning;
+          value: DepositState.ErrorAccepting;
           context: DepositMachineContext<ConfirmingGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.SubmittingMint;
+          value: DepositState.Claiming;
           context: DepositMachineContext<SubmittingGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.ErrorMinting;
+          value: DepositState.ErrorSubmitting;
           context: DepositMachineContext<SubmittingGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.Minting;
+          value: DepositState.DestInitiated;
           context: DepositMachineContext<MintedGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.Completed;
+          value: DepositState.Completed;
           context: DepositMachineContext<MintedGatewayTransaction<X>>;
       }
     | {
-          value: DepositStates.Rejected;
+          value: DepositState.Rejected;
           context: DepositMachineContext<GatewayTransaction<X>>;
       };
 
@@ -170,32 +170,52 @@ export interface ContractParams {
     [key: string]: any;
 }
 
+export enum DepositEvent {
+    NOOP = "NOOP",
+    CHECK = "CHECK",
+    LISTENING = "LISTENING",
+    DETECTED = "DETECTED",
+    ERROR = "ERROR",
+    RESTORE = "RESTORE",
+    RESTORED = "RESTORED",
+    CONFIRMED = "CONFIRMED",
+    CONFIRMATION = "CONFIRMATION",
+    SIGNED = "SIGNED",
+    SIGN_ERROR = "SIGN_ERROR",
+    REVERTED = "REVERTED",
+    CLAIM = "CLAIM",
+    REJECT = "REJECT",
+    SUBMITTED = "SUBMITTED",
+    SUBMIT_ERROR = "SUBMIT_ERROR",
+    ACKNOWLEDGE = "ACKNOWLEDGE"
+}
+
 export type DepositMachineEvent<X> =
-    | { type: "NOOP" }
-    | { type: "CHECK" }
-    | { type: "LISTENING" }
-    | { type: "DETECTED" }
-    | { type: "ERROR"; data: Partial<GatewayTransaction<X>>; error: Error }
-    | { type: "RESTORE"; data: Partial<AllGatewayTransactions<X>> }
-    | { type: "RESTORED"; data: AllGatewayTransactions<X> }
-    | { type: "CONFIRMED"; data: Partial<ConfirmingGatewayTransaction<X>> }
-    | { type: "CONFIRMATION"; data: Partial<ConfirmingGatewayTransaction<X>> }
-    | { type: "SIGNED"; data: AcceptedGatewayTransaction<X> }
-    | { type: "SIGN_ERROR"; data: GatewayTransaction<X>; error: Error }
-    | { type: "REVERTED"; data: GatewayTransaction<X>; error: Error }
+    | { type: DepositEvent.NOOP }
+    | { type: DepositEvent.CHECK }
+    | { type: DepositEvent.LISTENING }
+    | { type: DepositEvent.DETECTED }
+    | { type: DepositEvent.ERROR; data: Partial<GatewayTransaction<X>>; error: Error }
+    | { type: DepositEvent.RESTORE; data: Partial<AllGatewayTransactions<X>> }
+    | { type: DepositEvent.RESTORED; data: AllGatewayTransactions<X> }
+    | { type: DepositEvent.CONFIRMED; data: Partial<ConfirmingGatewayTransaction<X>> }
+    | { type: DepositEvent.CONFIRMATION; data: Partial<ConfirmingGatewayTransaction<X>> }
+    | { type: DepositEvent.SIGNED; data: AcceptedGatewayTransaction<X> }
+    | { type: DepositEvent.SIGN_ERROR; data: GatewayTransaction<X>; error: Error }
+    | { type: DepositEvent.REVERTED; data: GatewayTransaction<X>; error: Error }
     | {
-          type: "CLAIM";
+          type: DepositEvent.CLAIM;
           data: AcceptedGatewayTransaction<X>;
           params: ContractParams;
       }
-    | { type: "REJECT" }
-    | { type: "SUBMITTED"; data: Partial<SubmittingGatewayTransaction<X>> }
+    | { type: DepositEvent.REJECT }
+    | { type: DepositEvent.SUBMITTED; data: Partial<SubmittingGatewayTransaction<X>> }
     | {
-          type: "SUBMIT_ERROR";
+          type: DepositEvent.SUBMIT_ERROR;
           data: Partial<SubmittingGatewayTransaction<X>>;
           error: Error;
       }
-    | { type: "ACKNOWLEDGE"; data: Partial<SubmittingGatewayTransaction<X>> };
+    | { type: DepositEvent.ACKNOWLEDGE; data: Partial<SubmittingGatewayTransaction<X>> };
 
 /** Statemachine that tracks individual deposits */
 export const buildDepositMachine = <X>() =>
@@ -206,7 +226,7 @@ export const buildDepositMachine = <X>() =>
     >(
         {
             id: "RenVMDepositTransaction",
-            initial: DepositStates.CheckingCompletion,
+            initial: DepositState.CheckingCompletion,
             schema: {
                 events: createSchema<DepositMachineEvent<X>>(),
                 context:
@@ -217,16 +237,16 @@ export const buildDepositMachine = <X>() =>
             states: {
                 // Checking if deposit is completed so that we can skip initialization
                 checkingCompletion: {
-                    entry: [send("CHECK")],
+                    entry: [send(DepositEvent.CHECK)],
 
                     // If we already have completed, no need to listen
                     on: {
-                        CHECK: [
+                        [DepositEvent.CHECK]: [
                             {
-                                target: "completed",
+                                target: DepositState.Completed,
                                 cond: "isCompleted",
                             },
-                            { target: "restoringDeposit" },
+                            { target: DepositState.RestoringDeposit},
                         ],
                     },
 
@@ -253,17 +273,17 @@ export const buildDepositMachine = <X>() =>
 
                 restoringDeposit: {
                     entry: sendParent((c, _) => ({
-                        type: "RESTORE",
+                        type: DepositEvent.RESTORE,
                         data: c.deposit,
                     })),
 
                     on: {
-                        RESTORED: {
-                            target: "restoredDeposit",
+                        [DepositEvent.RESTORED]: {
+                            target: DepositState.RestoringDeposit,
                             actions: [assign((_, e) => ({ deposit: e.data }))],
                         },
-                        ERROR: {
-                            target: "errorRestoring",
+                        [DepositEvent.ERROR]: {
+                            target: DepositState.ErrorRestoring,
                             actions: assign((c, e) => ({
                                 deposit: { ...c.deposit, error: e.error },
                             })),
@@ -283,19 +303,19 @@ export const buildDepositMachine = <X>() =>
                 // Checking deposit internal state to transition to correct machine state
                 restoredDeposit: {
                     // Parent must send restored
-                    entry: [send("RESTORED")],
+                    entry: [send(DepositEvent.RESTORED)],
                     on: {
-                        RESTORED: [
+                        [DepositEvent.RESTORED]: [
                             {
-                                target: "srcSettling",
+                                target: DepositState.SrcSettling,
                                 cond: "isSrcSettling",
                             },
                             {
-                                target: "srcConfirmed",
+                                target: DepositState.SrcConfirmed,
                                 cond: "isSrcSettled",
                             },
                             {
-                                target: "accepted",
+                                target: DepositState.Accepted,
                                 cond: "isAccepted",
                             },
                             // We need to call "submit" again in case
@@ -313,13 +333,13 @@ export const buildDepositMachine = <X>() =>
 
                 srcSettling: {
                     entry: sendParent((ctx, _) => ({
-                        type: "SETTLE",
+                        type: "SETTLE", // TODO: ??
                         hash: ctx.deposit.sourceTxHash,
                     })),
                     on: {
-                        CONFIRMED: [
+                        [DepositEvent.CONFIRMED]: [
                             {
-                                target: "srcConfirmed",
+                                target: DepositState.SrcConfirmed,
                                 actions: [
                                     assign({
                                         deposit: ({ deposit }, evt) => {
@@ -353,7 +373,7 @@ export const buildDepositMachine = <X>() =>
                             },
                         ],
 
-                        CONFIRMATION: [
+                        [DepositEvent.CONFIRMATION]: [
                             {
                                 actions: [
                                     sendParent((ctx, evt) => ({
@@ -373,7 +393,7 @@ export const buildDepositMachine = <X>() =>
                             },
                         ],
 
-                        ERROR: [
+                        [DepositEvent.ERROR]: [
                             {
                                 actions: [
                                     assign({
@@ -396,8 +416,8 @@ export const buildDepositMachine = <X>() =>
                         hash: ctx.deposit.sourceTxHash,
                     })),
                     on: {
-                        SIGN_ERROR: {
-                            target: "errorAccepting",
+                        [DepositEvent.SIGN_ERROR]: {
+                            target: DepositState.ErrorAccepting,
                             actions: assign({
                                 deposit: (ctx, evt) => ({
                                     ...ctx.deposit,
@@ -405,8 +425,8 @@ export const buildDepositMachine = <X>() =>
                                 }),
                             }),
                         },
-                        REVERTED: {
-                            target: "rejected",
+                        [DepositEvent.REVERTED]: {
+                            target: DepositState.Rejected,
                             actions: assign({
                                 deposit: (ctx, evt) => ({
                                     ...ctx.deposit,
@@ -414,8 +434,8 @@ export const buildDepositMachine = <X>() =>
                                 }),
                             }),
                         },
-                        SIGNED: {
-                            target: "accepted",
+                        [DepositEvent.SIGNED]: {
+                            target: DepositState.Accepted,
                             actions: assign({
                                 deposit: (ctx, evt) => ({
                                     ...ctx.deposit,
@@ -447,8 +467,8 @@ export const buildDepositMachine = <X>() =>
                         };
                     }),
                     on: {
-                        CLAIM: {
-                            target: "claiming",
+                        [DepositEvent.CLAIM]: {
+                            target: DepositState.Claiming,
                             actions: assign({
                                 deposit: (ctx, evt) => ({
                                     ...ctx.deposit,
@@ -456,7 +476,7 @@ export const buildDepositMachine = <X>() =>
                                 }),
                             }),
                         },
-                        REJECT: "rejected",
+                        [DepositEvent.REJECT]: DepositState.Rejected,
                     },
                     meta: { test: async () => {} },
                 },
@@ -472,8 +492,8 @@ export const buildDepositMachine = <X>() =>
                         }),
                     ],
                     on: {
-                        CLAIM: {
-                            target: "claiming",
+                        [DepositEvent.CLAIM]: {
+                            target: DepositState.Claiming,
                             actions: assign({
                                 deposit: (ctx, evt) => ({
                                     ...ctx.deposit,
@@ -481,7 +501,7 @@ export const buildDepositMachine = <X>() =>
                                 }),
                             }),
                         },
-                        REJECT: "rejected",
+                        [DepositEvent.REJECT]: DepositState.Rejected,
                     },
                     meta: {
                         test: (_: void, state: any) => {
@@ -502,9 +522,9 @@ export const buildDepositMachine = <X>() =>
                             ctx.deposit.contractParams,
                     })),
                     on: {
-                        SUBMIT_ERROR: [
+                        [DepositEvent.SUBMIT_ERROR]: [
                             {
-                                target: "errorSubmitting",
+                                target: DepositState.ErrorSubmitting,
                                 actions: [
                                     assign({
                                         deposit: (ctx, evt) => ({
@@ -519,9 +539,9 @@ export const buildDepositMachine = <X>() =>
                                 ],
                             },
                         ],
-                        SUBMITTED: [
+                        [DepositEvent.SUBMITTED]: [
                             {
-                                target: "destInitiated",
+                                target: DepositState.DestInitiated,
                                 actions: [
                                     assign({
                                         deposit: (ctx, evt) => ({
@@ -542,9 +562,9 @@ export const buildDepositMachine = <X>() =>
 
                 destInitiated: {
                     on: {
-                        SUBMIT_ERROR: [
+                        [DepositEvent.SUBMIT_ERROR]: [
                             {
-                                target: "errorSubmitting",
+                                target: DepositState.ErrorSubmitting,
                                 actions: [
                                     assign({
                                         deposit: (ctx, evt) => ({
@@ -559,8 +579,8 @@ export const buildDepositMachine = <X>() =>
                                 ],
                             },
                         ],
-                        ACKNOWLEDGE: {
-                            target: "completed",
+                        [DepositEvent.ACKNOWLEDGE]: {
+                            target: DepositState.Completed,
                             actions: [
                                 assign({
                                     deposit: (ctx, _) => ({
