@@ -75,24 +75,6 @@ export interface GatewayMachineContext<DepositType, MintType = any> {
     sdk: RenJS;
 }
 
-export enum GatewayStates {
-    RESTORING = "restoring",
-    CREATING = "creating",
-    ERROR_CREATING = "srcInitializeError",
-    LISTENING = "listening",
-    COMPLETED = "completed",
-}
-
-export interface GatewayMachineSchema {
-    states: {
-        restoring: {};
-        creating: {};
-        srcInitializeError: {};
-        listening: {};
-        completed: {};
-    };
-}
-
 export type DepositEvent<DepositType> = {
     type: "DEPOSIT";
     data: GatewayTransaction<DepositType>;
@@ -148,6 +130,14 @@ export const buildMintContextWithMap = <X>(params: {
     return constructed;
 };
 
+export enum MintState { // TODO:  MintMachineState
+    Restoring = "restoring",
+    Creating = "creating",
+    SrcInitializeError = "srcInitializeError",
+    Listening = "listening",
+    Completed = "completed"
+}
+
 /**
  * An Xstate machine that, when given a serializable [[GatewaySession]] tx,
  * will instantiate a RenJS LockAndMint session, provide a gateway address,
@@ -166,9 +156,9 @@ export const buildMintMachine = <X extends UTXO>() =>
     createMachine<GatewayMachineContext<X>, GatewayMachineEvent<X>>(
         {
             id: "RenVMGatewaySession",
-            initial: "restoring",
+            initial: MintState.Restoring,
             states: {
-                restoring: {
+                [MintState.Restoring]: {
                     entry: [
                         send("RESTORE"),
                         assign({
@@ -194,7 +184,7 @@ export const buildMintMachine = <X extends UTXO>() =>
                     },
                 },
 
-                creating: {
+                [MintState.Creating]: {
                     meta: {
                         test: (_: void, state: any) => {
                             assert(
@@ -229,7 +219,7 @@ export const buildMintMachine = <X extends UTXO>() =>
                     },
                 },
 
-                srcInitializeError: {
+                [MintState.SrcInitializeError]: {
                     meta: {
                         test: (_: void, state: any) => {
                             assert(
@@ -240,7 +230,7 @@ export const buildMintMachine = <X extends UTXO>() =>
                     },
                 },
 
-                listening: {
+                [MintState.Listening]: {
                     meta: {
                         test: (_: void, state: any) => {
                             assert(
@@ -426,7 +416,7 @@ export const buildMintMachine = <X extends UTXO>() =>
                     },
                 },
 
-                completed: {
+                [MintState.Completed]: {
                     meta: {
                         test: (_: any, state: any) => {
                             if (state.context.depositListenerRef) {
