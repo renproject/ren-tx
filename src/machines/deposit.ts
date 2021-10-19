@@ -334,7 +334,7 @@ export const buildDepositMachine = <X>() =>
 
                 [DepositState.SrcSettling]: {
                     entry: sendParent((ctx, _) => ({
-                        type: "SETTLE", // TODO: ??
+                        type: MintEvent.SETTLE,
                         hash: ctx.deposit.sourceTxHash,
                     })),
                     on: {

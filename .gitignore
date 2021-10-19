@@ -33,6 +33,7 @@ typedoc/
 build
 misc
 dist
+example
 
 package-lock.json
 .npmrc
@@ -41,5 +42,3 @@ package-lock.json
 
 # FIXME: settle on cannonical and use
 .editorconfig
-
-example
