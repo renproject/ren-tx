@@ -236,7 +236,7 @@ export const buildDepositMachine = <X>() =>
             },
             states: {
                 // Checking if deposit is completed so that we can skip initialization
-                checkingCompletion: {
+                [DepositState.CheckingCompletion]: {
                     entry: [send(DepositEvent.CHECK)],
 
                     // If we already have completed, no need to listen
@@ -259,7 +259,7 @@ export const buildDepositMachine = <X>() =>
                         },
                     },
                 },
-                errorRestoring: {
+                [DepositState.ErrorRestoring]: {
                     entry: [log((ctx, _) => ctx.deposit.error, "ERROR")],
                     meta: {
                         test: (_: void, state: any) => {
@@ -271,7 +271,7 @@ export const buildDepositMachine = <X>() =>
                     },
                 },
 
-                restoringDeposit: {
+                [DepositState.RestoringDeposit]: {
                     entry: sendParent((c, _) => ({
                         type: DepositEvent.RESTORE,
                         data: c.deposit,
@@ -301,7 +301,7 @@ export const buildDepositMachine = <X>() =>
                 },
 
                 // Checking deposit internal state to transition to correct machine state
-                restoredDeposit: {
+                [DepositState.RestoredDeposit]: {
                     // Parent must send restored
                     entry: [send(DepositEvent.RESTORED)],
                     on: {
@@ -331,7 +331,7 @@ export const buildDepositMachine = <X>() =>
                     meta: { test: async () => {} },
                 },
 
-                srcSettling: {
+                [DepositState.SrcSettling]: {
                     entry: sendParent((ctx, _) => ({
                         type: "SETTLE", // TODO: ??
                         hash: ctx.deposit.sourceTxHash,
@@ -410,7 +410,7 @@ export const buildDepositMachine = <X>() =>
                     meta: { test: async () => {} },
                 },
 
-                srcConfirmed: {
+                [DepositState.SrcConfirmed]: {
                     entry: sendParent((ctx, _) => ({
                         type: "SIGN",
                         hash: ctx.deposit.sourceTxHash,
@@ -447,7 +447,7 @@ export const buildDepositMachine = <X>() =>
                     meta: { test: async () => {} },
                 },
 
-                errorAccepting: {
+                [DepositState.ErrorAccepting]: {
                     entry: [log((ctx, _) => ctx.deposit.error, "ERROR")],
                     meta: {
                         test: (_: void, state: any) => {
@@ -459,7 +459,7 @@ export const buildDepositMachine = <X>() =>
                     },
                 },
 
-                accepted: {
+                [DepositState.Accepted]: {
                     entry: sendParent((ctx, _) => {
                         return {
                             type: "CLAIMABLE",
@@ -481,7 +481,7 @@ export const buildDepositMachine = <X>() =>
                     meta: { test: async () => {} },
                 },
 
-                errorSubmitting: {
+                [DepositState.ErrorSubmitting]: {
                     entry: [
                         log((ctx, _) => ctx.deposit.error, "ERROR"),
                         sendParent((ctx, _) => {
@@ -513,7 +513,7 @@ export const buildDepositMachine = <X>() =>
                     },
                 },
 
-                claiming: {
+                [DepositState.Claiming]: {
                     entry: sendParent((ctx) => ({
                         type: "MINT",
                         hash: ctx.deposit.sourceTxHash,
@@ -560,7 +560,7 @@ export const buildDepositMachine = <X>() =>
                     meta: { test: async () => {} },
                 },
 
-                destInitiated: {
+                [DepositState.DestInitiated]: {
                     on: {
                         [DepositEvent.SUBMIT_ERROR]: [
                             {
@@ -594,7 +594,7 @@ export const buildDepositMachine = <X>() =>
                     meta: { test: async () => {} },
                 },
 
-                rejected: {
+                [DepositState.Rejected]: {
                     entry: [
                         sendParent((ctx, _) => {
                             return {
@@ -606,7 +606,7 @@ export const buildDepositMachine = <X>() =>
                     meta: { test: async () => {} },
                 },
 
-                completed: {
+                [DepositState.Completed]: {
                     entry: [
                         sendParent((ctx, _) => ({
                             type: "DEPOSIT_COMPLETED",
