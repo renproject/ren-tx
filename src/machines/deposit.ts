@@ -25,6 +25,7 @@ import {
     MintedGatewayTransaction,
     SubmittingGatewayTransaction,
 } from "../types/mint";
+import { MintEvent } from './mint'
 
 type extractGeneric<Type> = Type extends AllGatewayTransactions<infer X>
     ? X
@@ -365,7 +366,7 @@ export const buildDepositMachine = <X>() =>
                                     }),
                                     sendParent((ctx, _) => {
                                         return {
-                                            type: "DEPOSIT_UPDATE",
+                                            type: MintEvent.DEPOSIT_UPDATE,
                                             data: ctx.deposit,
                                         };
                                     }),
@@ -377,7 +378,7 @@ export const buildDepositMachine = <X>() =>
                             {
                                 actions: [
                                     sendParent((ctx, evt) => ({
-                                        type: "DEPOSIT_UPDATE",
+                                        type: MintEvent.DEPOSIT_UPDATE,
                                         data: { ...ctx.deposit, ...evt.data },
                                     })),
                                     assign({
@@ -412,7 +413,7 @@ export const buildDepositMachine = <X>() =>
 
                 [DepositState.SrcConfirmed]: {
                     entry: sendParent((ctx, _) => ({
-                        type: "SIGN",
+                        type: MintEvent.SIGN,
                         hash: ctx.deposit.sourceTxHash,
                     })),
                     on: {
@@ -462,7 +463,7 @@ export const buildDepositMachine = <X>() =>
                 [DepositState.Accepted]: {
                     entry: sendParent((ctx, _) => {
                         return {
-                            type: "CLAIMABLE",
+                            type: MintEvent.CLAIMABLE,
                             data: ctx.deposit,
                         };
                     }),
@@ -486,7 +487,7 @@ export const buildDepositMachine = <X>() =>
                         log((ctx, _) => ctx.deposit.error, "ERROR"),
                         sendParent((ctx, _) => {
                             return {
-                                type: "CLAIMABLE",
+                                type: MintEvent.CLAIMABLE,
                                 data: ctx.deposit,
                             };
                         }),
@@ -533,7 +534,7 @@ export const buildDepositMachine = <X>() =>
                                         }),
                                     }),
                                     sendParent((ctx, _) => ({
-                                        type: "DEPOSIT_UPDATE",
+                                        type: MintEvent.DEPOSIT_UPDATE,
                                         data: ctx.deposit,
                                     })),
                                 ],
@@ -550,7 +551,7 @@ export const buildDepositMachine = <X>() =>
                                         }),
                                     }),
                                     sendParent((ctx, _) => ({
-                                        type: "DEPOSIT_UPDATE",
+                                        type: MintEvent.DEPOSIT_UPDATE,
                                         data: ctx.deposit,
                                     })),
                                 ],
@@ -573,7 +574,7 @@ export const buildDepositMachine = <X>() =>
                                         }),
                                     }),
                                     sendParent((ctx, _) => ({
-                                        type: "DEPOSIT_UPDATE",
+                                        type: MintEvent.DEPOSIT_UPDATE,
                                         data: ctx.deposit,
                                     })),
                                 ],
@@ -598,7 +599,7 @@ export const buildDepositMachine = <X>() =>
                     entry: [
                         sendParent((ctx, _) => {
                             return {
-                                type: "DEPOSIT_UPDATE",
+                                type: MintEvent.DEPOSIT_UPDATE,
                                 data: ctx.deposit,
                             };
                         }),
@@ -609,11 +610,11 @@ export const buildDepositMachine = <X>() =>
                 [DepositState.Completed]: {
                     entry: [
                         sendParent((ctx, _) => ({
-                            type: "DEPOSIT_COMPLETED",
+                            type: MintEvent.DEPOSIT_COMPLETED,
                             data: ctx.deposit,
                         })),
                         sendParent((ctx, _) => ({
-                            type: "DEPOSIT_UPDATE",
+                            type: MintEvent.DEPOSIT_UPDATE,
                             data: ctx.deposit,
                         })),
                     ],

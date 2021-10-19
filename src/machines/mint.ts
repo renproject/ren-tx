@@ -85,9 +85,11 @@ export enum MintEvent { // TODO: MintMachineEvent
     SIGN = "SIGN",
     SETTLE = "SETTLE",
     MINT = "MINT",
+    UPDATE = "UPDATE",
     EXPIRED = "EXPIRED",
     ACKNOWLEDGE = "ACKNOWLEDGE",
     RESTORE = "RESTORE",
+    //added
     DEPOSIT = "DEPOSIT"
 }
 
@@ -176,7 +178,7 @@ export const buildMintMachine = <X extends UTXO>() =>
             states: {
                 [MintState.Restoring]: {
                     entry: [
-                        send("RESTORE"),
+                        send(MintEvent.RESTORE),
                         assign({
                             mintRequests: (_c, _e) => [],
                             depositMachines: (_ctx, _evt) => ({}),
@@ -393,7 +395,7 @@ export const buildMintMachine = <X extends UTXO>() =>
                                     send(
                                         (_, evt) => {
                                             return {
-                                                type: "UPDATE",
+                                                type: MintEvent.UPDATE,
                                                 hash: evt.data.sourceTxHash,
                                                 data: evt.data,
                                             };
