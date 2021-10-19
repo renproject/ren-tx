@@ -25,11 +25,12 @@ import {
     isOpen,
 } from "../types/mint";
 import {
+    DepositEvent,
     DepositMachineContext,
     DepositMachineEvent,
     DepositMachineSchema,
     DepositMachineTypestate,
-} from "./deposit";
+} from './deposit'
 
 export interface GatewayMachineContext<DepositType, MintType = any> {
     /**
@@ -75,13 +76,9 @@ export interface GatewayMachineContext<DepositType, MintType = any> {
     sdk: RenJS;
 }
 
-export type DepositEvent<DepositType> = {
-    type: "DEPOSIT";
-    data: GatewayTransaction<DepositType>;
-};
-
 export enum MintEvent { // TODO: MintMachineEvent
     CLAIMABLE = "CLAIMABLE",
+    LISTENING = "LISTENING",
     ERROR_LISTENING = "ERROR_LISTENING",
     DEPOSIT_UPDATE = "DEPOSIT_UPDATE",
     DEPOSIT_COMPLETED = "DEPOSIT_COMPLETED",
@@ -90,22 +87,28 @@ export enum MintEvent { // TODO: MintMachineEvent
     MINT = "MINT",
     EXPIRED = "EXPIRED",
     ACKNOWLEDGE = "ACKNOWLEDGE",
-    RESTORE = "RESTORE"
+    RESTORE = "RESTORE",
+    DEPOSIT = "DEPOSIT"
 }
 
+export type DepositEventType<DepositType> = {
+    type: MintEvent.DEPOSIT;
+    data: GatewayTransaction<DepositType>;
+};
+
 export type GatewayMachineEvent<DepositType> =
-    | DepositMachineEvent<DepositType>
-    | { type: MintEvent.CLAIMABLE; data: AcceptedGatewayTransaction<DepositType> }
-    | { type: MintEvent.ERROR_LISTENING; data: any }
-    | DepositEvent<DepositType>
-    | { type: MintEvent.DEPOSIT_UPDATE; data: AllGatewayTransactions<DepositType> }
-    | { type: MintEvent.DEPOSIT_COMPLETED; data: MintedGatewayTransaction<DepositType> }
-    | { type: MintEvent.SIGN; data: ConfirmingGatewayTransaction<DepositType> }
-    | { type: MintEvent.SETTLE; data: GatewayTransaction<DepositType> }
-    | { type: MintEvent.MINT; data: AcceptedGatewayTransaction<DepositType> }
-    | { type: MintEvent.EXPIRED; data: GatewayTransaction<DepositType> }
-    | { type: MintEvent.ACKNOWLEDGE; data: any }
-    | { type: MintEvent.RESTORE; data: GatewayTransaction<DepositType> };
+  | DepositMachineEvent<DepositType>
+  | { type: MintEvent.CLAIMABLE; data: AcceptedGatewayTransaction<DepositType> }
+  | { type: MintEvent.ERROR_LISTENING; data: any }
+  | DepositEventType<DepositType>
+  | { type: MintEvent.DEPOSIT_UPDATE; data: AllGatewayTransactions<DepositType> }
+  | { type: MintEvent.DEPOSIT_COMPLETED; data: MintedGatewayTransaction<DepositType> }
+  | { type: MintEvent.SIGN; data: ConfirmingGatewayTransaction<DepositType> }
+  | { type: MintEvent.SETTLE; data: GatewayTransaction<DepositType> }
+  | { type: MintEvent.MINT; data: AcceptedGatewayTransaction<DepositType> }
+  | { type: MintEvent.EXPIRED; data: GatewayTransaction<DepositType> }
+  | { type: MintEvent.ACKNOWLEDGE; data: any }
+  | { type: MintEvent.RESTORE; data: GatewayTransaction<DepositType> };
 
 type extractGeneric<Type> = Type extends LockChain<infer X> ? X : never;
 
@@ -181,7 +184,7 @@ export const buildMintMachine = <X extends UTXO>() =>
                     ],
                     meta: { test: async () => {} },
                     on: {
-                        RESTORE: [
+                        [MintEvent.RESTORE]: [
                             {
                                 target: MintState.Completed,
                                 cond: "isExpired",
@@ -256,11 +259,11 @@ export const buildMintMachine = <X extends UTXO>() =>
                         src: "depositListener",
                     },
                     on: {
-                        EXPIRED: MintState.Completed,
+                        [MintEvent.EXPIRED]: MintState.Completed,
                         // once we have ren-js listening for deposits,
                         // start the statemachines to determine deposit states
-                        LISTENING: { actions: "depositMachineSpawner" },
-                        ERROR_LISTENING: {
+                        [MintEvent.LISTENING]: { actions: "depositMachineSpawner" },
+                        [MintEvent.ERROR_LISTENING]: {
                             target: MintState.SrcInitializeError,
                             actions: [
                                 assign({
@@ -277,7 +280,7 @@ export const buildMintMachine = <X extends UTXO>() =>
                         },
 
                         // forward messages from child machines to renjs listeners
-                        RESTORE: [
+                        [MintEvent.RESTORE]: [
                             {
                                 cond: "isPersistedDeposit",
                                 actions: "forwardEvent",
@@ -302,32 +305,32 @@ export const buildMintMachine = <X extends UTXO>() =>
                                 ],
                             },
                         ],
-                        SETTLE: {
+                        [MintEvent.SETTLE]: {
                             actions: "forwardEvent",
                         },
-                        SIGN: {
+                        [MintEvent.SIGN]: {
                             actions: "forwardEvent",
                         },
-                        MINT: {
+                        [MintEvent.MINT]: {
                             actions: "forwardEvent",
                         },
 
                         // Send messages to child machines
-                        RESTORED: {
+                        [DepositEvent.RESTORED]: {
                             actions: "routeEvent",
                         },
-                        CLAIM: { actions: "routeEvent" },
-                        CONFIRMATION: { actions: "routeEvent" },
-                        CONFIRMED: { actions: "routeEvent" },
-                        ERROR: { actions: "routeEvent" },
-                        SIGN_ERROR: { actions: "routeEvent" },
-                        REVERTED: { actions: "routeEvent" },
-                        SUBMIT_ERROR: { actions: "routeEvent" },
-                        SIGNED: { actions: "routeEvent" },
-                        SUBMITTED: { actions: "routeEvent" },
-                        ACKNOWLEDGE: { actions: "routeEvent" },
+                        [DepositEvent.CLAIM]: { actions: "routeEvent" },
+                        [DepositEvent.CONFIRMATION]: { actions: "routeEvent" },
+                        [DepositEvent.CONFIRMED]: { actions: "routeEvent" },
+                        [DepositEvent.ERROR]: { actions: "routeEvent" },
+                        [DepositEvent.SIGN_ERROR]: { actions: "routeEvent" },
+                        [DepositEvent.REVERTED]: { actions: "routeEvent" },
+                        [DepositEvent.SUBMIT_ERROR]: { actions: "routeEvent" },
+                        [DepositEvent.SIGNED]: { actions: "routeEvent" },
+                        [DepositEvent.SUBMITTED]: { actions: "routeEvent" },
+                        [DepositEvent.ACKNOWLEDGE]: { actions: "routeEvent" },
 
-                        CLAIMABLE: {
+                        [MintEvent.CLAIMABLE]: {
                             actions: assign({
                                 mintRequests: (context, evt) => {
                                     const oldRequests =
@@ -359,7 +362,7 @@ export const buildMintMachine = <X extends UTXO>() =>
                         //     cond: "isCompleted",
                         // },
 
-                        DEPOSIT_UPDATE: [
+                        [MintEvent.DEPOSIT_UPDATE]: [
                             {
                                 actions: [
                                     assign({
@@ -405,7 +408,7 @@ export const buildMintMachine = <X extends UTXO>() =>
                             },
                         ],
 
-                        DEPOSIT: {
+                        [MintEvent.DEPOSIT]: {
                             cond: "isNewDeposit",
                             actions: [
                                 assign({
@@ -445,7 +448,7 @@ export const buildMintMachine = <X extends UTXO>() =>
         {
             guards: {
                 isPersistedDeposit: (ctx, evt) => {
-                    const depositEvt = evt as DepositEvent<X>;
+                    const depositEvt = evt as DepositEventType<X>;
                     if (!depositEvt.data) return false;
                     return (ctx.tx.transactions || {})[
                         depositEvt.data.sourceTxHash
@@ -454,7 +457,7 @@ export const buildMintMachine = <X extends UTXO>() =>
                         : false;
                 },
                 isNewDeposit: (ctx, evt) => {
-                    const depositEvt = evt as DepositEvent<X>;
+                    const depositEvt = evt as DepositEventType<X>;
                     if (!depositEvt.data) return false;
                     return !(ctx.depositMachines || {})[
                         depositEvt.data.sourceTxHash
