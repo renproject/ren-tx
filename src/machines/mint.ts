@@ -80,19 +80,32 @@ export type DepositEvent<DepositType> = {
     data: GatewayTransaction<DepositType>;
 };
 
+export enum MintEvent { // TODO: MintMachineEvent
+    CLAIMABLE = "CLAIMABLE",
+    ERROR_LISTENING = "ERROR_LISTENING",
+    DEPOSIT_UPDATE = "DEPOSIT_UPDATE",
+    DEPOSIT_COMPLETED = "DEPOSIT_COMPLETED",
+    SIGN = "SIGN",
+    SETTLE = "SETTLE",
+    MINT = "MINT",
+    EXPIRED = "EXPIRED",
+    ACKNOWLEDGE = "ACKNOWLEDGE",
+    RESTORE = "RESTORE"
+}
+
 export type GatewayMachineEvent<DepositType> =
     | DepositMachineEvent<DepositType>
-    | { type: "CLAIMABLE"; data: AcceptedGatewayTransaction<DepositType> }
-    | { type: "ERROR_LISTENING"; data: any }
+    | { type: MintEvent.CLAIMABLE; data: AcceptedGatewayTransaction<DepositType> }
+    | { type: MintEvent.ERROR_LISTENING; data: any }
     | DepositEvent<DepositType>
-    | { type: "DEPOSIT_UPDATE"; data: AllGatewayTransactions<DepositType> }
-    | { type: "DEPOSIT_COMPLETED"; data: MintedGatewayTransaction<DepositType> }
-    | { type: "SIGN"; data: ConfirmingGatewayTransaction<DepositType> }
-    | { type: "SETTLE"; data: GatewayTransaction<DepositType> }
-    | { type: "MINT"; data: AcceptedGatewayTransaction<DepositType> }
-    | { type: "EXPIRED"; data: GatewayTransaction<DepositType> }
-    | { type: "ACKNOWLEDGE"; data: any }
-    | { type: "RESTORE"; data: GatewayTransaction<DepositType> };
+    | { type: MintEvent.DEPOSIT_UPDATE; data: AllGatewayTransactions<DepositType> }
+    | { type: MintEvent.DEPOSIT_COMPLETED; data: MintedGatewayTransaction<DepositType> }
+    | { type: MintEvent.SIGN; data: ConfirmingGatewayTransaction<DepositType> }
+    | { type: MintEvent.SETTLE; data: GatewayTransaction<DepositType> }
+    | { type: MintEvent.MINT; data: AcceptedGatewayTransaction<DepositType> }
+    | { type: MintEvent.EXPIRED; data: GatewayTransaction<DepositType> }
+    | { type: MintEvent.ACKNOWLEDGE; data: any }
+    | { type: MintEvent.RESTORE; data: GatewayTransaction<DepositType> };
 
 type extractGeneric<Type> = Type extends LockChain<infer X> ? X : never;
 
@@ -170,15 +183,15 @@ export const buildMintMachine = <X extends UTXO>() =>
                     on: {
                         RESTORE: [
                             {
-                                target: "completed",
+                                target: MintState.Completed,
                                 cond: "isExpired",
                             },
                             {
-                                target: "listening",
+                                target: MintState.Listening,
                                 cond: "isCreated",
                             },
                             {
-                                target: "creating",
+                                target: MintState.Creating,
                             },
                         ],
                     },
@@ -196,13 +209,13 @@ export const buildMintMachine = <X extends UTXO>() =>
                     invoke: {
                         src: "txCreator",
                         onDone: {
-                            target: "listening",
+                            target: MintState.Listening,
                             actions: assign({
                                 tx: (_context, evt) => ({ ...evt.data }),
                             }),
                         },
                         onError: {
-                            target: "srcInitializeError",
+                            target: MintState.SrcInitializeError,
                             actions: [
                                 assign({
                                     tx: (context, evt) => {
@@ -243,12 +256,12 @@ export const buildMintMachine = <X extends UTXO>() =>
                         src: "depositListener",
                     },
                     on: {
-                        EXPIRED: "completed",
+                        EXPIRED: MintState.Completed,
                         // once we have ren-js listening for deposits,
                         // start the statemachines to determine deposit states
                         LISTENING: { actions: "depositMachineSpawner" },
                         ERROR_LISTENING: {
-                            target: "srcInitializeError",
+                            target: MintState.SrcInitializeError,
                             actions: [
                                 assign({
                                     tx: (context, evt) => {
