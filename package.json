@@ -43,9 +43,7 @@
     },
     "dependencies": {
         "@renproject/chains-bitcoin": "^2.5.9",
-        "bignumber.js": "^9.0.1"
-    },
-    "devDependencies": {
+        "bignumber.js": "^9.0.1",
         "@renproject/chains-ethereum": "^2.5.9",
         "@renproject/interfaces": "^2.5.2",
         "@renproject/ren": "^2.5.7",
