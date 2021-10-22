@@ -33,6 +33,7 @@ typedoc/
 build
 misc
 dist
+#example
 
 package-lock.json
 .npmrc

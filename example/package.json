@@ -1,0 +1,27 @@
+{
+  "name": "example",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "parcel index.html",
+    "watch": "parcel watch index.html",
+    "build": "parcel build index.html"
+  },
+  "dependencies": {
+    "@renproject/chains-ethereum": "^2.5.9",
+    "@renproject/interfaces": "^2.5.9",
+    "@renproject/ren": "^2.5.9",
+    "@renproject/ren-tx": "^2.5.9",
+    "@renproject/rpc": "^2.5.9",
+    "@metamask/detect-provider": "^1.2.0",
+    "@xstate/react": "^1.6.1",
+    "xstate": "4.25.0",
+    "ethers": "^5.4.7",
+    "react-app-polyfill": "^1.0.0",
+    "parcel": "1.12.3",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "typescript": "^3.4.5"
+  }
+}

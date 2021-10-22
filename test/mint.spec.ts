@@ -8,19 +8,20 @@ import { interpret } from "xstate";
 import { config as loadDotEnv } from "dotenv";
 
 import {
-    AllGatewayTransactions,
-    buildMintMachine,
-    GatewaySession,
-    isErroring,
-    isOpen,
-    buildMintConfig,
-    buildMintContextWithMap,
-    GatewayTransaction,
-} from "../src";
+  AllGatewayTransactions,
+  buildMintMachine,
+  GatewaySession,
+  isErroring,
+  isOpen,
+  buildMintConfig,
+  buildMintContextWithMap,
+  GatewayTransaction, DepositEvent,
+} from '../src'
 import {
     buildMockLockChain,
     buildMockMintChain,
     MockLockChainParams,
+  // @ts-ignore
 } from "./testutils/mock";
 import { SECONDS } from "@renproject/utils";
 
@@ -255,7 +256,7 @@ describe("MintMachine", () => {
 
                             if (innerState?.event?.type === "SIGNED") {
                                 depositMachine.send({
-                                    type: "CLAIM",
+                                    type: DepositEvent.CLAIM,
                                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                     data: innerState.context.deposit as any,
                                     params: {},
@@ -385,7 +386,7 @@ describe("MintMachine", () => {
 
                             if (innerState?.value === "accepted") {
                                 depositMachine.send({
-                                    type: "CLAIM",
+                                    type: DepositEvent.CLAIM,
                                     data: innerState.context.deposit,
                                     params: {},
                                 });
@@ -548,7 +549,7 @@ describe("MintMachine", () => {
 
                                     if (innerState?.value === "accepted") {
                                         depositMachine.send({
-                                            type: "CLAIM",
+                                            type: DepositEvent.CLAIM,
                                             data: innerState.context.deposit,
                                             params: {},
                                         });

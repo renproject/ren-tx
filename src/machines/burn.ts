@@ -50,42 +50,42 @@ export interface BurnMachineContext<BurnType, ReleaseType> {
     burnListenerRef?: Actor<any>;
 }
 
-export enum BurnStates {
+export enum BurnState {
     /** Tx is resolving which state it should be in based on feedback from renjs */
-    RESTORE = "restoring",
+    Restoring = "restoring",
 
     /** Tx is being initialized by renjs */
-    CREATING = "creating",
+    Creating = "creating",
 
     /** Tx has been initialized by renjs successfully and is ready to be submitted*/
-    CREATED = "created",
+    Created = "created",
 
     /** Burn has been submitted to host chain */
-    SUBMITTING_BURN = "submittingBurn",
+    SubmittingBurn = "submittingBurn",
 
     /** Source/host chain is awaiting sufficient confirmations */
-    CONFIRMING_BURN = "srcSettling",
+    SrcSettling = "srcSettling",
 
     /** There was an error encountered while processing the burn tx
      * Could be either from renvm or the host chain */
-    ERROR_BURNING = "errorBurning",
+    ErrorBurning = "errorBurning",
 
     /** Source/host chain has reached sufficient confirmations and tx
      * can be submitted to renVM for release */
-    RENVM_RELEASING = "srcConfirmed",
+    SrcConfirmed = "srcConfirmed",
 
     /** RenVM has recieved the tx and provided a hash */
-    RENVM_ACCEPTED = "accepted",
+    Accepted = "accepted",
 
     /** An error occored while processing the release
      * Should only come from renVM */
-    ERROR_RELEASING = "errorReleasing",
+    ErrorReleasing = "errorReleasing",
 
     /** The release tx has successfully been broadcast
      * For network v0.3+ we get the release destTxHash
      * otherwise it will never be provided
      */
-    RELEASED = "destInitiated",
+    DestInitiated = "destInitiated",
 }
 
 // We have different states for a burn machine, as there can only be one transaction
@@ -129,23 +129,45 @@ export interface BurnMachineSchema {
     };
 }
 
+export enum BurnEvent {
+    NOOP = "NOOP",
+    RESTORE = "RESTORE",
+    CREATED = "CREATED",
+    RETRY = "RETRY",
+    SUBMIT = "SUBMIT",
+    SUBMITTED = "SUBMITTED",
+    RELEASE = "RELEASE",
+    RELEASE_ERROR = "RELEASE_ERROR",
+    BURN_ERROR = "BURN_ERROR",
+    CONFIRMATION = "CONFIRMATION",
+    CONFIRMED = "CONFIRMED",
+    ACCEPTED = "ACCEPTED",
+    RELEASED = "RELEASED",
+    COMPLETED = "COMPLETED"
+}
+
+export type BurnMachineEventObject<Type, Data> = {
+    type: Type,
+    data?: Data
+}
+
 export type BurnMachineEvent<X, Y> =
-    | { type: "NOOP" }
-    | { type: "RESTORE" }
-    | { type: "CREATED" }
-    | { type: "RETRY" }
+    | { type: BurnEvent.NOOP }
+    | { type: BurnEvent.RESTORE }
+    | { type: BurnEvent.CREATED }
+    | { type: BurnEvent.RETRY }
     // Submit to renvm
-    | { type: "SUBMIT" }
+    | { type: BurnEvent.SUBMIT }
     // Burn Submitted
-    | { type: "SUBMITTED"; data: BurnTransaction }
-    | { type: "RELEASE" }
-    | { type: "RELEASE_ERROR"; data: Partial<BurnTransaction>; error: Error }
-    | { type: "BURN_ERROR"; data: Partial<BurnSession<X, Y>>; error: Error }
-    | { type: "CONFIRMATION"; data: BurnTransaction }
-    | { type: "CONFIRMED"; data: BurnTransaction }
-    | { type: "ACCEPTED"; data: ConfirmedBurnTransaction<X> }
-    | { type: "RELEASED"; data: ReleasedBurnTransaction<X> }
-    | { type: "COMPLETED"; data: CompletedBurnTransaction<X, Y> };
+    | { type: BurnEvent.SUBMITTED; data: BurnTransaction }
+    | { type: BurnEvent.RELEASE }
+    | { type: BurnEvent.RELEASE_ERROR; data: Partial<BurnTransaction>; error: Error }
+    | { type: BurnEvent.BURN_ERROR; data: Partial<BurnSession<X, Y>>; error: Error }
+    | { type: BurnEvent.CONFIRMATION; data: BurnTransaction }
+    | { type: BurnEvent.CONFIRMED; data: BurnTransaction }
+    | { type: BurnEvent.ACCEPTED; data: ConfirmedBurnTransaction<X> }
+    | { type: BurnEvent.RELEASED; data: ReleasedBurnTransaction<X> }
+    | { type: BurnEvent.COMPLETED; data: CompletedBurnTransaction<X, Y> };
 
 type extractBurnTx<Type> = Type extends MintChain<infer X> ? X : never;
 type extractReleaseTx<Type> = Type extends LockChain<infer X> ? X : never;
@@ -230,21 +252,21 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
     >(
         {
             id: "RenVMBurnMachine",
-            initial: "restoring",
+            initial: BurnState.Restoring,
             states: {
                 restoring: {
-                    entry: send("RESTORE"),
+                    entry: send(BurnEvent.RESTORE),
                     on: {
-                        RESTORE: [
+                        [BurnEvent.RESTORE]: [
                             {
-                                target: "destInitiated",
+                                target: BurnState.DestInitiated,
                                 cond: "isDestInitiated",
                             },
                             // We can't restore to this state, because the machine needs
                             // to be initialized
                             // { target: "srcConfirmed", cond: "isSrcConfirmed" },
-                            { target: "srcSettling", cond: "isSrcSettling" },
-                            { target: "creating" },
+                            { target: BurnState.SrcSettling, cond: "isSrcSettling" },
+                            { target: BurnState.Creating },
                         ],
                     },
                     meta: { test: async () => {} },
@@ -253,7 +275,7 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                 creating: {
                     entry: "burnSpawner",
                     on: {
-                        CREATED: "created",
+                        [BurnEvent.CREATED]: BurnState.Created,
                     },
 
                     meta: {
@@ -270,8 +292,8 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                     on: {
                         // When we fail to submit to the host chain, we don't enter the
                         // settling state, so handle the error here
-                        BURN_ERROR: {
-                            target: "errorBurning",
+                        [BurnEvent.BURN_ERROR]: {
+                            target: BurnState.ErrorBurning,
                             actions: assign({
                                 tx: (ctx, evt) =>
                                     evt.error
@@ -287,10 +309,9 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                                         : ctx.tx,
                             }),
                         },
-
-                        SUBMIT: {
-                            target: BurnStates.SUBMITTING_BURN,
-                            actions: send("SUBMIT", {
+                        [BurnEvent.SUBMIT]: {
+                            target: BurnState.SubmittingBurn,
+                            actions: send(BurnEvent.SUBMIT, {
                                 to: (ctx) => {
                                     return ctx.burnListenerRef?.id || "";
                                 },
@@ -327,10 +348,10 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                     // },
                 },
 
-                submittingBurn: {
+                [BurnState.SubmittingBurn]: {
                     on: {
-                        BURN_ERROR: {
-                            target: "errorBurning",
+                        [BurnEvent.BURN_ERROR]: {
+                            target: BurnState.ErrorBurning,
                             actions: assign({
                                 tx: (ctx, evt) =>
                                     evt.error
@@ -346,7 +367,7 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                                         : ctx.tx,
                             }),
                         },
-                        SUBMITTED: {
+                        [BurnEvent.SUBMITTED]: {
                             actions: [
                                 assign({
                                     tx: (ctx, evt) => ({
@@ -357,8 +378,8 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                             ],
                         },
                         // Wait for a confirmation before entering confirming
-                        CONFIRMATION: {
-                            target: "srcSettling",
+                        [BurnEvent.CONFIRMATION]: {
+                            target: BurnState.SrcSettling,
                             // update src confs
                             actions: assign({
                                 tx: (ctx, evt) => ({
@@ -378,12 +399,12 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                     },
                 },
 
-                srcSettling: {
+                [BurnState.SrcSettling]: {
                     // spawn in case we aren't creating
                     entry: "burnSpawner",
                     on: {
-                        BURN_ERROR: {
-                            target: "errorBurning",
+                        [BurnEvent.BURN_ERROR]: {
+                            target: BurnState.ErrorBurning,
                             actions: assign({
                                 tx: (ctx, evt) =>
                                     evt.data
@@ -395,15 +416,14 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                             }),
                         },
                         // In case we restored and didn't submit
-                        SUBMIT: {
-                            actions: send("SUBMIT", {
+                        [BurnEvent.SUBMIT]: {
+                            actions: send( BurnEvent.SUBMIT, {
                                 to: (ctx) => {
                                     return ctx.burnListenerRef?.id || "";
                                 },
                             }),
                         },
-
-                        CONFIRMATION: {
+                        [BurnEvent.CONFIRMATION]: {
                             // update src confs
                             actions: assign({
                                 tx: (ctx, evt) => ({
@@ -412,7 +432,7 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                                 }),
                             }),
                         },
-                        CONFIRMED: {
+                        [BurnEvent.CONFIRMED]: {
                             actions: [
                                 assign({
                                     tx: (ctx, evt) => ({
@@ -421,7 +441,7 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                                     }),
                                 }),
                             ],
-                            target: "srcConfirmed",
+                            target: BurnState.SrcConfirmed,
                         },
                     },
                     meta: {
@@ -436,7 +456,7 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                     },
                 },
 
-                errorReleasing: {
+                [BurnState.ErrorReleasing]: {
                     meta: {
                         test: (_: void, state: any) => {
                             assert(
@@ -446,19 +466,19 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                         },
                     },
                     on: {
-                        RETRY: "srcConfirmed",
+                        [BurnEvent.RETRY]: BurnState.SrcConfirmed,
                     },
                 },
 
-                srcConfirmed: {
-                    entry: send("RELEASE", {
+                [BurnState.SrcConfirmed]: {
+                    entry: send(BurnEvent.RELEASE, {
                         to: (ctx) => {
                             return ctx.burnListenerRef?.id || "";
                         },
                     }),
                     on: {
-                        RELEASE_ERROR: {
-                            target: "errorReleasing",
+                        [BurnEvent.RELEASE_ERROR]: {
+                            target: BurnState.ErrorReleasing,
                             actions: assign({
                                 tx: (ctx, evt) =>
                                     evt.data
@@ -469,7 +489,7 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                                         : ctx.tx,
                             }),
                         },
-                        ACCEPTED: {
+                        [BurnEvent.ACCEPTED]: {
                             actions: [
                                 assign({
                                     tx: (ctx, evt) => ({
@@ -478,7 +498,7 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                                     }),
                                 }),
                             ],
-                            target: "accepted",
+                            target: BurnState.Accepted,
                         },
                     },
                     meta: {
@@ -495,12 +515,12 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                     },
                 },
 
-                accepted: {
+                [BurnState.Accepted]: {
                     on: {
                         // handle submitting to release chain
-                        SUBMIT: {},
-                        RELEASE_ERROR: {
-                            target: "errorReleasing",
+                        [BurnEvent.SUBMIT]: {},
+                        [BurnEvent.RELEASE_ERROR]: {
+                            target: BurnState.ErrorReleasing,
                             actions: assign({
                                 tx: (ctx, evt) =>
                                     evt.data
@@ -511,8 +531,8 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                                         : ctx.tx,
                             }),
                         },
-                        RELEASED: {
-                            target: "destInitiated",
+                        [BurnEvent.RELEASED]: {
+                            target: [BurnState.DestInitiated],
                             actions: assign({
                                 tx: (ctx, evt) => ({
                                     ...ctx.tx,
@@ -524,7 +544,7 @@ export const buildBurnMachine = <BurnType, ReleaseType>() =>
                     meta: { test: async () => {} },
                 },
 
-                destInitiated: {
+                [BurnState.DestInitiated]: {
                     meta: {
                         test: (_: void, state: any) => {
                             assert(

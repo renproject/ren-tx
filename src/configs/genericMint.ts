@@ -20,11 +20,11 @@ import {
 import { TransactionReceipt } from "@ethersproject/providers";
 
 import {
-    buildDepositMachine,
+    buildDepositMachine, DepositEvent,
     DepositMachineContext,
     DepositMachineEvent,
-} from "../machines/deposit";
-import { GatewayMachineContext, GatewayMachineEvent } from "../machines/mint";
+} from '../machines/deposit'
+import { GatewayMachineContext, GatewayMachineEvent, MintEvent } from '../machines/mint'
 import {
     AcceptedGatewayTransaction,
     AllGatewayTransactions,
@@ -101,7 +101,7 @@ const initMinter = async <X>(
 
     if (isOpen(context.tx) && gatewayAddress != context.tx.gatewayAddress) {
         callback({
-            type: "ERROR_LISTENING",
+            type: MintEvent.ERROR_LISTENING,
             data: new Error(
                 `Incorrect gateway address ${String(
                     minter.gatewayAddress,
@@ -115,7 +115,7 @@ const initMinter = async <X>(
 const handleSettle = async <X>(
     sourceTxHash: string,
     deposit: LockAndMintDeposit,
-    callback: Sender<DepositMachineEvent<X>>,
+    sender: Sender<DepositMachineEvent<X>>,
 ) => {
     try {
         const res = await deposit
@@ -126,8 +126,8 @@ const handleSettle = async <X>(
                     sourceTxConfs: 0,
                     sourceTxConfTarget: targetConfs,
                 };
-                callback({
-                    type: "CONFIRMATION",
+                sender({
+                    type: DepositEvent.CONFIRMATION,
                     data: confirmedTx,
                 });
             })
@@ -137,14 +137,14 @@ const handleSettle = async <X>(
                     sourceTxConfs: confs,
                     sourceTxConfTarget: targetConfs,
                 };
-                callback({
-                    type: "CONFIRMATION",
+                sender({
+                    type: DepositEvent.CONFIRMATION,
                     data: confirmedTx,
                 });
             });
 
-        callback({
-            type: "CONFIRMED",
+        sender({
+            type: DepositEvent.CONFIRMED,
             data: {
                 sourceTxConfTarget: res._state.targetConfirmations,
                 sourceTxConfs: res._state.targetConfirmations,
@@ -152,8 +152,8 @@ const handleSettle = async <X>(
             },
         });
     } catch (e) {
-        callback({
-            type: "ERROR",
+        sender({
+            type: DepositEvent.ERROR,
             data: {
                 sourceTxHash,
             },
@@ -166,15 +166,15 @@ const handleSettle = async <X>(
 const handleSign = async <X>(
     tx: ConfirmingGatewayTransaction<X>,
     deposit: LockAndMintDeposit,
-    callback: Sender<DepositMachineEvent<X>>,
+    sender: Sender<DepositMachineEvent<X>>,
 ) => {
     try {
         const v = await deposit.signed();
         // TODO: handle status? .on("status", (state) => {});
 
         if (!v._state.queryTxResult || !v._state.queryTxResult.out) {
-            callback({
-                type: "SIGN_ERROR",
+            sender({
+                type: DepositEvent.SIGN_ERROR,
                 data: {
                     ...tx,
                 },
@@ -187,8 +187,8 @@ const handleSign = async <X>(
                 v._state.queryTxResult.out.revert !== undefined) ||
             v.revertReason
         ) {
-            callback({
-                type: "REVERTED",
+            sender({
+                type: DepositEvent.REVERTED,
                 data: {
                     ...tx,
                 },
@@ -208,16 +208,16 @@ const handleSign = async <X>(
                 renSignature:
                     v._state.queryTxResult.out.signature?.toString("hex"),
             };
-            callback({
-                type: "SIGNED",
+            sender({
+                type: DepositEvent.SIGNED,
                 data,
             });
         }
     } catch (e) {
         // If error was due to revert - enter reverted state
         if (deposit.revertReason) {
-            callback({
-                type: "REVERTED",
+            sender({
+                type: DepositEvent.REVERTED,
                 data: {
                     ...tx,
                 },
@@ -228,8 +228,8 @@ const handleSign = async <X>(
 
         // If a tx has already been minted, we will get an error at this step
         // We can assume that a "utxo spent" error implies that the asset has been minted
-        callback({
-            type: "SIGN_ERROR",
+        sender({
+            type: DepositEvent.SIGN_ERROR,
             data: tx,
 
             // Error must be stringified because full log breaks xstate serialization
@@ -254,13 +254,13 @@ const handleMint = async <X, Y extends { [name: string]: unknown }>(
             };
             if (receipt.status === 0) {
                 callback({
-                    type: "SUBMIT_ERROR",
+                    type: DepositEvent.SUBMIT_ERROR,
                     data: { sourceTxHash },
                     error: new Error("Transaction was reverted"),
                 });
             } else {
                 callback({
-                    type: "ACKNOWLEDGE",
+                    type: DepositEvent.ACKNOWLEDGE,
                     data: submittedTx,
                 });
             }
@@ -276,7 +276,7 @@ const handleMint = async <X, Y extends { [name: string]: unknown }>(
                     destTxHash: transactionHash,
                 };
                 callback({
-                    type: "SUBMITTED",
+                    type: DepositEvent.SUBMITTED,
                     data: submittedTx,
                 });
             }),
@@ -285,7 +285,7 @@ const handleMint = async <X, Y extends { [name: string]: unknown }>(
         await minter;
     } catch (e) {
         callback({
-            type: "SUBMIT_ERROR",
+            type: DepositEvent.SUBMIT_ERROR,
             data: { sourceTxHash },
             error: e,
         });
@@ -349,7 +349,7 @@ const resolveDeposit = <X extends { confirmations?: string }>(
 
 const mintFlow = <X>(
     context: GatewayMachineContext<X>,
-    callback: Sender<GatewayMachineEvent<X>>,
+    sender: Sender<GatewayMachineEvent<X>>,
     receive: Receiver<any>,
     minter: LockAndMint<X, DepositCommon<X>, any, any, any>,
 ) => {
@@ -385,14 +385,14 @@ const mintFlow = <X>(
                 };
                 data = completedTx;
             }
-            return callback({ type: "RESTORED", data });
+            return sender({ type: DepositEvent.RESTORED, data });
         }
 
         const resolved = resolveDeposit(txHash, deposit);
         detectedTransactions.set(txHash, resolved);
 
-        callback({
-            type: "DEPOSIT",
+        sender({
+            type: MintEvent.DEPOSIT,
             data: resolved,
         });
     };
@@ -404,8 +404,8 @@ const mintFlow = <X>(
         if (!deposit) return;
         const tx = detectedTransactions.get(event.hash);
         if (!tx || !isConfirming(tx)) {
-            callback({
-                type: "ERROR",
+            sender({
+                type: DepositEvent.ERROR,
                 data: event.data,
                 error: new Error(`Invalid deposit: ${String(event.hash)}`),
             });
@@ -414,20 +414,20 @@ const mintFlow = <X>(
 
         const handle = async () => {
             switch (event.type) {
-                case "UPDATE":
+                case MintEvent.UPDATE:
                     detectedTransactions.set(event.hash, event.data);
                     break;
-                case "SETTLE":
-                    await handleSettle(event.hash, deposit, callback);
+                case MintEvent.SETTLE:
+                    await handleSettle(event.hash, deposit, sender);
                     break;
-                case "SIGN":
-                    await handleSign(tx, deposit, callback);
+                case MintEvent.SIGN:
+                    await handleSign(tx, deposit, sender);
                     break;
-                case "MINT":
+                case MintEvent.MINT:
                     await handleMint(
                         event.hash,
                         deposit,
-                        callback,
+                        sender,
                         event.params,
                     );
                     break;
@@ -438,8 +438,8 @@ const mintFlow = <X>(
             .then()
             .catch((e) => {
                 console.error(e, event.data);
-                callback({
-                    type: "ERROR",
+                sender({
+                    type: DepositEvent.ERROR,
                     data: event.data,
                     error: e,
                 });
@@ -458,8 +458,8 @@ const mintFlow = <X>(
                         depositHandler(r);
                     })
                     .catch((e) => {
-                        callback({
-                            type: "ERROR",
+                        sender({
+                            type: DepositEvent.ERROR,
                             data: event.data,
                             error: e,
                         });
@@ -479,10 +479,10 @@ const depositListener =
             .then((minter) => {
                 cleanup = () => minter.removeAllListeners();
                 mintFlow(context, callback, receive, minter);
-                callback({ type: "LISTENING" });
+                callback({ type: DepositEvent.LISTENING });
             })
             .catch((e) => {
-                callback({ type: "ERROR_LISTENING", data: e });
+                callback({ type: MintEvent.ERROR_LISTENING, data: e });
             });
 
         return () => {

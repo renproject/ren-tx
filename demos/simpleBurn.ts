@@ -6,7 +6,7 @@ import RenJS from "@renproject/ren";
 import { Ethereum } from "@renproject/chains-ethereum";
 import { Bitcoin } from "@renproject/chains-bitcoin";
 import HDWalletProvider from "@truffle/hdwallet-provider";
-import { BurnSession, isBurnCompleted } from "../build/main/types/burn";
+import { BurnSession, isBurnCompleted } from '../build/main';
 import ethers from "ethers";
 
 const MNEMONIC = process.env.MNEMONIC;
