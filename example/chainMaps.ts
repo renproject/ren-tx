@@ -34,10 +34,10 @@ export const getBurnChainMap: any = (provider: any) => ({
     // const amount = String(
     //   Math.floor(Number(context.tx.targetAmount) * Math.pow(10, 9))
     // );
-    const amount = String(Math.floor(Number(context.tx.targetAmount) * 1e8));
+    // const amount = String(Math.floor(Number(context.tx.targetAmount) * 1e8));
     return Ethereum(provider, context.tx.network).Account({
       address: context.tx.userAddress,
-      // value: amount,
+      value: context.tx.targetAmount,
       // @ts-ignore
       // amount
     }) as any;

@@ -12,9 +12,9 @@ import {
   isBurnConfirmed,
   isBurnErroring,
   buildBurnContextWithMap
-} from "@renproject/ren-tx"; // this "works", but wont "submit"
+// } from "@renproject/ren-tx"; // this "works", but wont "submit"
 // those "flicker", sometimes works, stucked at "creating"
-// } from "./../src";
+} from '../src';
 
 // } from "ren-tx-local";
 // } from "./../build/main";
@@ -36,10 +36,6 @@ const useBurnMachine = (initialTx: any, provider: any) => {
           sdk: new RenJS("testnet", {
             useV2TransactionFormat: true,
             // @ts-ignore
-            logger: {
-              level: 1,
-              debug: console.debug
-            }
           }),
           fromChainMap: burnChainMap,
           toChainMap: releaseChainMap,

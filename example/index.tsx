@@ -1,8 +1,8 @@
 import 'react-app-polyfill/ie11';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { BurnExample } from './BurnExample'
 // import { MintExample } from './MintExample'
+import { BurnExample } from './BurnExample'
 
 if (typeof (window as any).ethereum !== 'undefined') {
   console.log('MetaMask is installed!');

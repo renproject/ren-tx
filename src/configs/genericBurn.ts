@@ -21,6 +21,7 @@ import {
 } from "../types/burn";
 
 const burnAndRelease = async <X, Y>(context: BurnMachineContext<X, Y>) => {
+    console.log("transaction", context);
     const transaction = context.tx.transaction?.sourceTxHash;
     return await context.sdk.burnAndRelease({
         asset: context.tx.sourceAsset.toUpperCase(),
@@ -35,11 +36,13 @@ const spawnBurnTransaction = assign<
     BurnMachineEvent<any, any>
 >({
     burnListenerRef: <X, Y>(context: BurnMachineContext<X, Y>, event: any) => {
+        console.log("burnListenerRef", context);
         const actorName = `${context.tx.id}BurnListener`;
         if (context.burnListenerRef) {
             console.warn("listener already exists");
             return context.burnListenerRef;
         }
+        console.log("burnListenerRef continuation")
         const transactionListener = burnTransactionListener(context);
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
         return spawn(transactionListener, actorName) as Actor<any>;
@@ -160,6 +163,7 @@ const performBurn = async <X, Y>(
         }
         throw new Error(`Burn interrupted`);
     } catch (error) {
+        console.error(error);
         throw error;
     }
 };
@@ -246,87 +250,96 @@ const performRelease = async <X, Y>(
         send({
             type: BurnEvent.RELEASE_ERROR,
             data: tx,
-            error: e,
+            error: e as any,
         });
     }
 };
 
 const burnTransactionListener =
-    <X, Y>(context: BurnMachineContext<X, Y>) =>
-    (send: Sender<BurnMachineEvent<X, Y>>, receive: Receiver<any>) => {
-        const cleaners: Array<() => void> = [];
-        let burning = false;
-        let tx: ConfirmedBurnTransaction<X>;
-        burnAndRelease(context)
-            .then((burn) => {
-                // Ready to recieve SUBMIT
-                send({ type: BurnEvent.CREATED });
-                if (
+    <X, Y>(context: BurnMachineContext<X, Y>) => {
+    console.log("generating inner function", context)
+        return (send: Sender<BurnMachineEvent<X, Y>>, receive: Receiver<any>) => {
+            const cleaners: Array<() => void> = []
+            let burning = false
+            let tx: ConfirmedBurnTransaction<X>
+            console.log('listener')
+            burnAndRelease(context)
+              .then((burn) => {
+                  // Ready to recieve SUBMIT
+                  send({ type: BurnEvent.CREATED })
+                  if (
                     context.autoSubmit ||
                     // Always "SUBMIT" if we have submitted previously
                     context.tx.transaction
-                ) {
-                    setTimeout(() => send(BurnEvent.SUBMIT), 500);
-                }
+                  ) {
+                      setTimeout(() => send(BurnEvent.SUBMIT), 500)
+                  }
 
-                receive((event) => {
-                    if (event.type === BurnEvent.SUBMIT) {
-                        // Only burn once
-                        if (burning) {
-                            return;
-                        }
-                        burning = true;
-                        performBurn(burn, send, cleaners, context)
+                  receive((event) => {
+                      if (event.type === BurnEvent.SUBMIT) {
+                          // Only burn once
+                          if (burning) {
+                              return
+                          }
+                          burning = true
+                          performBurn(burn, send, cleaners, context)
                             .then((r) => (tx = r))
                             .catch((e) => {
-                                console.error(e);
+                                console.error(e)
                                 send({
                                     type: BurnEvent.BURN_ERROR,
                                     data: e.toString(),
                                     error: e,
-                                });
-                            });
-                    }
+                                })
+                            })
+                      }
 
-                    if (event.type === BurnEvent.RELEASE) {
-                        const tx: ConfirmedBurnTransaction<X> =
+                      if (event.type === BurnEvent.RELEASE) {
+                          const tx: ConfirmedBurnTransaction<X> =
                             (context.tx
-                                .transaction as ConfirmedBurnTransaction<X>) ||
-                            extractTx(burn);
+                              .transaction as ConfirmedBurnTransaction<X>) ||
+                            extractTx(burn)
 
-                        performRelease(burn, send, cleaners, tx)
+                          performRelease(burn, send, cleaners, tx)
                             .then()
                             .catch((e) => {
-                                console.error(e);
+                                console.error(e)
                                 send({
                                     type: BurnEvent.BURN_ERROR,
                                     data: context.tx,
                                     error: e,
-                                });
-                            });
-                    }
-                });
-            })
-            .catch((e) => {
-                console.error(e);
+                                })
+                            })
+                      }
+                  })
+              })
+              .catch((e) => {
+                  console.error(e)
 
-                send({ type: BurnEvent.BURN_ERROR, data: {}, error: e });
-            });
+                  send({ type: BurnEvent.BURN_ERROR, data: {}, error: e })
+              })
 
-        return () => {
-            for (const cleaner of cleaners) {
-                cleaner();
+            return () => {
+                for (const cleaner of cleaners) {
+                    cleaner()
+                }
             }
-        };
+        }
     };
 
-export const buildBurnConfig = <X, Y>(): Partial<
-    MachineOptions<BurnMachineContext<X, Y>, BurnMachineEvent<X, Y>>
-> => ({
+export const buildBurnConfig = <X, Y>(): Partial<MachineOptions<
+  BurnMachineContext<X, Y>,
+  BurnMachineEvent<X, Y>
+>> => {
+    console.log("building config", spawnBurnTransaction, burnTransactionListener)
+  return {
     actions: {
-        burnSpawner: spawnBurnTransaction,
+      burnSpawner: spawnBurnTransaction
     },
     services: {
-        burnListener: burnTransactionListener,
-    },
-});
+      burnListener: burnTransactionListener
+    }
+  };
+};
+
+console.log("generic burn");

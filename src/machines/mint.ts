@@ -11,7 +11,9 @@ import RenJS from "@renproject/ren";
 import { DepositCommon, LockChain, MintChain } from "@renproject/interfaces";
 import { assert } from "@renproject/utils";
 import { log } from "xstate/lib/actions";
-import { UTXO } from "@renproject/chains-bitcoin/build/main/APIs/API";
+// import { UTXO } from "@renproject/chains-bitcoin";
+
+type UTXO = any;
 
 import {
     AllGatewayTransactions,

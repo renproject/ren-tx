@@ -157,7 +157,7 @@ const handleSettle = async <X>(
             data: {
                 sourceTxHash,
             },
-            error: e,
+            error: e as any,
         });
     }
 };
@@ -233,7 +233,7 @@ const handleSign = async <X>(
             data: tx,
 
             // Error must be stringified because full log breaks xstate serialization
-            error: e,
+            error: e as any,
         });
     }
 };
@@ -287,7 +287,7 @@ const handleMint = async <X, Y extends { [name: string]: unknown }>(
         callback({
             type: DepositEvent.SUBMIT_ERROR,
             data: { sourceTxHash },
-            error: e,
+            error: e as any,
         });
     }
 };
