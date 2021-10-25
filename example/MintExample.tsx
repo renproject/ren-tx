@@ -2,7 +2,7 @@ import { Bitcoin, BitcoinCash, Zcash } from '@renproject/chains-bitcoin'
 import { BinanceSmartChain, Ethereum } from '@renproject/chains-ethereum'
 import RenJS from '@renproject/ren'
 import * as React from 'react'
-import { FunctionComponent, useCallback, useEffect, useState } from 'react'
+import { FunctionComponent, useCallback, useEffect, useMemo, useState } from 'react'
 import { interpret } from 'xstate'
 import { useMachine } from "@xstate/react";
 
@@ -23,14 +23,21 @@ import {
   GatewayMachineEvent,
   OpenedGatewaySession,
   AllGatewayTransactions
-} from "./../build/main";
+// } from "@renproject/ren-tx";
+// } from "./../build/main";
+} from '../src';
+
 import { lockChainMap, getMintChainMap } from './chainMaps'
 import { ethereum } from './utils'
 
 
 const useMintMachine =  (initialTx: any, provider: any) => {
   const mintChainMap = getMintChainMap(provider);
+  console.log(initialTx);
 
+  const context = useMemo(() => {
+
+  });
   return useMachine(mintMachine, {
     context: {
       ...buildMintContextWithMap({
@@ -43,7 +50,6 @@ const useMintMachine =  (initialTx: any, provider: any) => {
         toChainMap: mintChainMap,
       }),
     },
-    autoSubmit: true,
     devTools: true,
   });
 }
@@ -152,7 +158,7 @@ export const MintExample: FunctionComponent = () => {
   console.log(account);
   const handleMint = useCallback(() => {
     const mintTransaction: GatewaySession<any, any> = {
-      "id": "a unique identifier",
+      "id": "tx-31231132",
       "network": "testnet",
       "sourceAsset": "btc",
       "sourceChain": "bitcoin",
@@ -161,7 +167,7 @@ export const MintExample: FunctionComponent = () => {
       "userAddress": account,
       "transactions": {},
       "customParams": {},
-      "nonce": "2020202020202020202020202020202020202020202020202020202034393330",
+      "nonce": "2020202020202020202020202020202020202020202020202020202034393331",
       "expiryTime": new Date().getTime() + 1000 * 60 * 60 * 24,
     }
     // processMint(mintTransaction, provider);

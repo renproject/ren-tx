@@ -1,8 +1,9 @@
-import 'react-app-polyfill/ie11';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 // import { MintExample } from './MintExample'
-import { BurnExample } from './BurnExample'
+// import { BurnExample } from './BurnExample'
+import { Empty } from './Empty'
+import { MintExample } from './MintExample'
 
 if (typeof (window as any).ethereum !== 'undefined') {
   console.log('MetaMask is installed!');
@@ -11,10 +12,12 @@ if (typeof (window as any).ethereum !== 'undefined') {
 }
 
 const App = () => {
+
   return (
     <div>
-      {/*<MintExample/>*/}
-      <BurnExample/>
+      <MintExample/>
+      {/*<BurnExample/>*/}
+      <Empty/>
     </div>
   );
 };

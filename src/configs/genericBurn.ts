@@ -265,6 +265,7 @@ const burnTransactionListener =
             console.log('listener')
             burnAndRelease(context)
               .then((burn) => {
+                  alert('CREATED');
                   // Ready to recieve SUBMIT
                   send({ type: BurnEvent.CREATED })
                   if (
@@ -321,6 +322,7 @@ const burnTransactionListener =
 
             return () => {
                 for (const cleaner of cleaners) {
+                    console.log('cleaning');
                     cleaner()
                 }
             }

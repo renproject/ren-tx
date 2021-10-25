@@ -39,6 +39,7 @@ package-lock.json
 .npmrc
 .yarnrc
 .yarn/
+.parcel-cache
 
 # FIXME: settle on cannonical and use
 .editorconfig

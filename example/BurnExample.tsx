@@ -2,7 +2,7 @@ import { Bitcoin } from '@renproject/chains-bitcoin'
 import { Ethereum } from '@renproject/chains-ethereum'
 import RenJS from '@renproject/ren'
 import * as React from 'react'
-import { FunctionComponent, useCallback, useEffect, useState } from 'react'
+import { FunctionComponent, useCallback, useEffect, useMemo, useState } from 'react'
 import { interpret } from 'xstate'
 import {
   burnMachine,
@@ -22,21 +22,19 @@ import {
 console.log(require("@renproject/ren-tx/package.json").version);
 
 import { useMachine } from "@xstate/react";
-import { getBurnChainMap, releaseChainMap } from './chainMaps'
+import { getBurnChainMap, getRenJs, releaseChainMap } from './chainMaps'
 import { ethereum } from './utils'
 
 const useBurnMachine = (initialTx: any, provider: any) => {
   console.log('generating burnChainMap');
   const burnChainMap = getBurnChainMap(provider);
+  console.log(burnMachine);
   return useMachine(burnMachine,
     {
       context: {
         ...buildBurnContextWithMap({
           tx: {...initialTx},
-          sdk: new RenJS("testnet", {
-            useV2TransactionFormat: true,
-            // @ts-ignore
-          }),
+          sdk: getRenJs(initialTx.network),
           fromChainMap: burnChainMap,
           toChainMap: releaseChainMap,
           // If we already have a transaction, we need to autoSubmit
@@ -131,7 +129,7 @@ export const BurnExample: FunctionComponent = () => {
       userAddress: account,
       customParams: {},
       // @ts-ignore
-      // transaction: {}
+      transactions: {}
     };
     setTx(burnTransaction);
     // processBurn(burnTransaction);
@@ -186,13 +184,13 @@ const BurnSessionProcessor: FunctionComponent<{tx: any, provider: any}> = ({tx:i
       return [...states, machineStateValue]
     })
   },  [machineStateValue]);
-  console.log(current)
+  console.log("current", current)
   console.log(current.context);
   const burnSession = current.context.tx;
   const tx = burnSession.transaction;
   const handleBurn = useCallback(() => {
     send({type: "SUBMIT" as any});
-  }, [send, tx]);
+  }, [send]);
   return <>
     <p>Burn machine states order: <strong>{machineStates.join(", ")}</strong></p>
     {
@@ -204,6 +202,7 @@ const BurnSessionProcessor: FunctionComponent<{tx: any, provider: any}> = ({tx:i
       </>
     }
     <button onClick={handleBurn}>Burn</button>
+    <button onClick={() => send("CREATED" as any)}>Created</button>
     <pre>
       {JSON.stringify(current.context, null, 2)}
     </pre>

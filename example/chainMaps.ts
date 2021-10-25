@@ -2,6 +2,9 @@
 import { Bitcoin, BitcoinCash, Zcash } from '@renproject/chains-bitcoin'
 // based on the destination network
 import { BinanceSmartChain, Ethereum } from '@renproject/chains-ethereum'
+import { RenNetwork } from '@renproject/interfaces'
+import RenJS from '@renproject/ren'
+import { RenJSConfig } from '@renproject/ren/build/main/config'
 import {
   GatewayMachineContext,
   BurnMachineContext
@@ -53,7 +56,32 @@ export const getBurnChainMap: any = (provider: any) => ({
 
 export const lockChainMap = {
   bitcoin: () => Bitcoin(),
-  zcash: () => Zcash(),
-  bitcoinCash: () => BitcoinCash(),
+  // zcash: () => Zcash(),
+  // bitcoinCash: () => BitcoinCash(),
+};
+
+const renJsConfig: RenJSConfig = {
+  loadCompletedDeposits: true,
+};
+
+type RenJSCache = Record<RenNetwork, RenJS>;
+const renJsCache: Partial<RenJSCache> = {};
+const renJsV2Cache: Partial<RenJSCache> = {};
+export const getRenJs = (network: RenNetwork) => {
+  const forceV2 = true;
+  const cache = forceV2 ? renJsV2Cache : renJsCache;
+  if (!cache[network]) {
+    cache[network] = new RenJS(network, {
+      ...renJsConfig,
+      useV2TransactionFormat: false,
+      // @ts-ignore
+      // logger: {
+      //   level: 1,
+      //   debug: console.debug,
+      // },
+    });
+  }
+  (window as any).renJS = cache[network];
+  return cache[network] as RenJS;
 };
 
