@@ -17,5 +17,7 @@
         "resolveJsonModule": true
     },
     "include": ["src"],
-    "exclude": ["src/**/flycheck*", "test", "build", "demos", "example"]
+    "exclude": ["src/**/flycheck*", "test", "build", "demos",
+      "react-example"
+    ]
 }
