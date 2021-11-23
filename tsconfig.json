@@ -16,7 +16,7 @@
         "declaration": true,
         "resolveJsonModule": true
     },
-    "include": ["src"],
+    "include": ["src/index.ts"],
     "exclude": ["src/**/flycheck*", "test", "build", "demos",
       "react-example"
     ]
