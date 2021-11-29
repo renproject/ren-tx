@@ -1,43 +1,39 @@
-*.env
-.cache
+# See http://help.github.com/ignore-files/ for more about ignoring files.
 
-node_modules
+# compiled output
+/dist
+/tmp
+/out-tsc
 
-lerna-debug.log
+# dependencies
+/node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
 yarn-error.log
+testem.log
+/typings
 
-.yarn
-.cache
-/.project
-/.settings/
-
-# Logs
-*.log
-
-# Coverage
-.nyc_output
-coverage
-reports
-
-# IDE specific
-.vscode
-.idea
-.dir-locals.el
-
+# System Files
 .DS_Store
-
-typedoc/
-
-*.env
-
-build
-misc
-dist
-
-package-lock.json
-.npmrc
-.yarnrc
-.yarn/
-
-# FIXME: settle on cannonical and use
-.editorconfig
+Thumbs.db

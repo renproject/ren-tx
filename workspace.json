@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "projects": {
+    "playground": "apps/playground",
+    "playground-e2e": "apps/playground-e2e"
+  }
+}

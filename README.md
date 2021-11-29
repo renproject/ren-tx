@@ -1,162 +1,94 @@
-# `🤖 @renproject/ren-tx`
 
-This implements RenVM transaction lifecycles in [xstate](https://xstate.js.org) state-machines to allow developers to easily trace the state of a transaction, and explicitly know which cases they should handle during processing.
 
-The aim is to provide a declarative interface, that can accept serializable "transaction" objects, that will reactively process the appropriate stages in the transaction lifecycle.
+# RenTx
 
-## Differences between RenJS and @renproject/ren-tx
+This project was generated using [Nx](https://nx.dev).
 
-|                           | renjs | @renproject/ren-tx |
-| ------------------------- | ----- | ------------------ |
-| reactive                  | ❌    | ✓                  |
-| serializable transactions | ❌    | ✓                  |
-| finite, explicit states   | ❌    | ✓                  |
+<p style="text-align: center;"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="450"></p>
 
-## Concepts
+🔎 **Smart, Extensible Build Framework**
 
-In order to make full use of this library, it is valuable to understand the [concepts behind xstate](https://xstate.js.org/docs/about/concepts.html#finite-state-machines)
+## Adding capabilities to your workspace
 
-At a high level, this package provides
+Nx supports many plugins which add capabilities for developing different types of applications and different tools.
 
--   `mintMachine` - a machine for instantiating a gateway address and listening for deposits.
--   `depositMachine` - a machine for processing the lifecycle of a gateway deposit, all the way from detection on the source chain, until confirmation on the destination chain.
--   `burnMachine` - a machine for processing burn and release transactions.
+These capabilities include generating applications, libraries, etc as well as the devtools to test, and build projects as well.
 
-As well as a standard serializable schema for persisting and restoring transactions, `GatewaySession`
+Below are our core plugins:
 
-## Usage
+- [React](https://reactjs.org)
+  - `npm install --save-dev @nrwl/react`
+- Web (no framework frontends)
+  - `npm install --save-dev @nrwl/web`
+- [Angular](https://angular.io)
+  - `npm install --save-dev @nrwl/angular`
+- [Nest](https://nestjs.com)
+  - `npm install --save-dev @nrwl/nest`
+- [Express](https://expressjs.com)
+  - `npm install --save-dev @nrwl/express`
+- [Node](https://nodejs.org)
+  - `npm install --save-dev @nrwl/node`
 
-In order to mint or burn, all the developer needs to do is to import the appropriate machine for for the desired flow, provide the necessary dependencies via the machine context, and run the machine via the appropriate interpreter for their application (eg `@xstate/react` for `react` applications).
+There are also many [community plugins](https://nx.dev/community) you could add.
 
-Each machine requires
+## Generate an application
 
--   `tx` - transaction parameters
--   `sdk` - the `RenJS` sdk instantiated for the appropriate network
--   `providers` - Blockchain wallet providers for signing and sending transactions for desired networks
--   `fromChainMap` - A mapping of source networks to builders for their `@renproject/chains` parameters
--   `toChainMap` - A mapping of destination networks to builders for their `@renproject/chains` parameters
+Run `nx g @nrwl/react:app my-app` to generate an application.
 
-### Standalone xstate example
+> You can use any of the plugins above to generate applications as well.
 
-(see the `/demos` folder for complete examples)
+When using Nx, you can create multiple applications and libraries in the same workspace.
 
-#### Minting
+## Generate a library
 
-```typescript
-import { interpret } from "xstate";
-import {
-    mintMachine,
-    mintConfig,
-    GatewaySession,
-    GatewayMachineContext,
-} from "../"; //"@renproject/rentx";
-import RenJS from "@renproject/ren";
-import { BinanceSmartChain, Ethereum } from "@renproject/chains-ethereum";
-import { Bitcoin, BitcoinCash, Zcash } from "@renproject/chains-bitcoin";
-import HDWalletProvider from "@truffle/hdwallet-provider";
-import ethers from "ethers";
+Run `nx g @nrwl/react:lib my-lib` to generate a library.
 
-const MNEMONIC = process.env.MNEMONIC;
-const INFURA_URL = process.env.INFURA_URL;
-const hdWalletProvider = new HDWalletProvider({
-    mnemonic: MNEMONIC || "",
-    providerOrUrl: infuraURL,
-    addressIndex: 0,
-    numberOfAddresses: 10,
-});
-const ethProvider = new ethers.providers.Web3Provider(hdWalletProvider);
+> You can also use any of the plugins above to generate libraries as well.
 
-const mintTransaction: GatewaySession = {
-    id: "a unique identifier",
-    type: "mint",
-    network: "testnet",
-    sourceAsset: "btc",
-    sourceChain: "bitcoin",
-    destAddress: "ethereum address that will receive assets",
-    destChain: "ethereum",
-    targetAmount: 0.001,
-    userAddress: "address that will sign the transaction",
-    expiryTime: new Date().getTime() + 1000 * 60 * 60 * 24,
-    transactions: {},
-    customParams: {},
-};
+Libraries are shareable across libraries and applications. They can be imported from `@ren-tx/mylib`.
 
-// A mapping of how to construct parameters for host chains,
-// based on the destination network
-export const toChainMap = {
-    binanceSmartChain: (context: GatewayMachineContext) => {
-        const { destAddress, destChain, network } = context.tx;
-        const { providers } = context;
-        return new BinanceSmartChain(providers[destChain], network).Account({
-            address: destAddress,
-        });
-    },
-    ethereum: (context: GatewayMachineContext) => {
-        const { destAddress, destChain, network } = context.tx;
-        const { providers } = context;
+## Development server
 
-        return Ethereum(providers[destChain], network).Account({
-            address: destAddress,
-        });
-    },
-};
+Run `nx serve my-app` for a dev server. Navigate to http://localhost:4200/. The app will automatically reload if you change any of the source files.
 
-// A mapping of how to construct parameters for source chains,
-// based on the source network
-export const fromChainMap = {
-    bitcoin: () => Bitcoin(),
-    zcash: () => Zcash(),
-    bitcoinCash: () => BitcoinCash(),
-};
+## Code scaffolding
 
-const blockchainProviders = {
-    ethereum: hdWalletProvider,
-};
+Run `nx g @nrwl/react:component my-component --project=my-app` to generate a new component.
 
-ethProvider.listAccounts().then((accounts) => {
-    mintTransaction.destAddress = accounts[0];
-    mintTransaction.userAddress = accounts[0];
-    const machine = mintMachine.withConfig(mintConfig).withContext({
-        tx: mintTransaction,
-        sdk: new RenJS("testnet"),
-        providers: blockchainProviders,
-        fromChainMap,
-        toChainMap,
-    });
+## Build
 
-    // Interpret the machine, and add a listener for whenever a transition occurs.
-    // The machine will detect which state the transaction should be in,
-    // and perform the neccessary next actions
-    let promptedGatewayAddress = false;
-    let claimed = false;
-    const service = interpret(machine).onTransition((state) => {
-        if (!promptedGatewayAddress && state.context.tx.gatewayAddress) {
-            console.log(
-                "Please deposit BTC to",
-                state.context.tx.gatewayAddress,
-            );
-            promptedGatewayAddress = true;
-        }
-        const deposit = Object.values(state.context.tx.transactions || {})[0];
-        if (
-            state.context.mintRequests.includes(deposit.sourceTxHash) &&
-            !claimed
-        ) {
-            // implement logic to determine whether deposit is valid
-            // In our case we take the first deposit to be the correct one
-            // and immediately sign
-            console.log("Signing transaction");
-            claimed;
-            service.send({ type: "CLAIM", hash: deposit.sourceTxHash });
-        }
-        if (deposit && deposit.destTxHash) {
-            // If we have a destination txHash, we have successfully minted BTC
-            console.log("Your BTC has been minted! TxHash", deposit.destTxHash);
-            service.stop();
-        }
-    });
+Run `nx build my-app` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
 
-    // Start the service
-    service.start();
-});
-```
+## Running unit tests
+
+Run `nx test my-app` to execute the unit tests via [Jest](https://jestjs.io).
+
+Run `nx affected:test` to execute the unit tests affected by a change.
+
+## Running end-to-end tests
+
+Run `ng e2e my-app` to execute the end-to-end tests via [Cypress](https://www.cypress.io).
+
+Run `nx affected:e2e` to execute the end-to-end tests affected by a change.
+
+## Understand your workspace
+
+Run `nx dep-graph` to see a diagram of the dependencies of your projects.
+
+## Further help
+
+Visit the [Nx Documentation](https://nx.dev) to learn more.
+
+
+
+## ☁ Nx Cloud
+
+### Distributed Computation Caching & Distributed Task Execution
+
+<p style="text-align: center;"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-cloud-card.png"></p>
+
+Nx Cloud pairs with Nx in order to enable you to build and test code more rapidly, by up to 10 times. Even teams that are new to Nx can connect to Nx Cloud and start saving time instantly.
+
+Teams using Nx gain the advantage of building full-stack applications with their preferred framework alongside Nx’s advanced code generation and project dependency graph, plus a unified experience for both frontend and backend developers.
+
+Visit [Nx Cloud](https://nx.app/) to learn more.
