@@ -69,12 +69,11 @@ const mint = async () => {
 };
 
 export const MintPage: FunctionComponent = () => {
-
     const handleMint = useCallback(() => {
       mint().catch(console.error)
     }, [])
     return <main>
       <h1>RenJS Mint</h1>
-      <button onClick={handleMint}></button>
+      <button onClick={handleMint}>Mint</button>
     </main>
 }
