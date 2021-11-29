@@ -1,0 +1,34 @@
+{
+  "root": "libs/ren-tx",
+  "sourceRoot": "libs/ren-tx/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/ren-tx/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/libs/ren-tx"],
+      "options": {
+        "jestConfig": "libs/ren-tx/jest.config.js",
+        "passWithNoTests": true
+      }
+    },
+    "build": {
+      "executor": "@nrwl/node:package",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/ren-tx",
+        "tsConfig": "libs/ren-tx/tsconfig.lib.json",
+        "packageJson": "libs/ren-tx/package.json",
+        "main": "libs/ren-tx/src/index.ts",
+        "assets": ["libs/ren-tx/*.md"]
+      }
+    }
+  },
+  "tags": []
+}
