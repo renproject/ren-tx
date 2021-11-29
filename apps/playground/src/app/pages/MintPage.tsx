@@ -16,6 +16,9 @@ const mint = async () => {
   const ethProvider = new ethers.providers.Web3Provider(getEthereum(), network);
   const to = new Ethereum(network, ethProvider);
 
+  await to.getMintGateway("BTC");
+
+  return;
   const renJS = new RenJS(network).withChains(from, to);
 
   const gateway = await renJS.gateway({
