@@ -4,17 +4,24 @@ import { FunctionComponent, useCallback } from 'react'
 import { Bitcoin } from "@renproject/chains-bitcoin";
 import { Ethereum } from "@renproject/chains-ethereum";
 import { ethers } from 'ethers';
-import { RenNetwork } from '@renproject/interfaces';
+import { RenNetwork } from '@renproject/utils';
+import detectEthereumProvider from "@metamask/detect-provider";
 
-const getEthereum = () => (window as any).ethereum;
+// const getEthereum = () => (window as any).ethereum;
 
 const mint = async () => {
-  await getEthereum().enable();
+  // await getEthereum().enable();
   const network = RenNetwork.Testnet;
   const asset = Bitcoin.assets.BTC;
   const from = new Bitcoin(network);
-  const ethProvider = new ethers.providers.Web3Provider(getEthereum(), network);
-  const to = new Ethereum(network, ethProvider);
+  const provider: any = await detectEthereumProvider();
+  console.log('hello');
+  if (provider) {
+    await provider.enable();
+  } else {
+    throw new Error(`Please install MetaMask.`);
+  }
+  const to = new Ethereum(network, new ethers.providers.Web3Provider(provider));
 
   await to.getMintGateway("BTC");
 
